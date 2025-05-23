@@ -1,2 +1,2 @@
-# su-chatbot-ai
-Sharefull Shift chatbot AI demo
+# su-ai-chatbot
+Sharefull Shift AI chatbot demo
