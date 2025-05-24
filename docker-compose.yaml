@@ -1,0 +1,13 @@
+name: su-ai-chatbot
+
+services:
+  worker:
+    build:
+      context: .
+    image: su-ai-chatbot
+    container_name: su-ai-chatbot
+    environment:
+      TZ: Asia/Tokyo
+    ports:
+      - 7860:7860
+    restart: unless-stopped
