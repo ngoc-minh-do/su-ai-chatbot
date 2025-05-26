@@ -11,9 +11,11 @@ import logging
 
 import gradio as gr
 import torch
-from huggingface_hub import login
-from langchain_core.messages import HumanMessage, SystemMessage
-from langchain_huggingface import ChatHuggingFace, HuggingFacePipeline
+from langchain_core.output_parsers import StrOutputParser
+from langchain_core.prompts import PromptTemplate
+from langchain_core.runnables import RunnablePassthrough
+from langchain_huggingface import HuggingFaceEmbeddings, HuggingFacePipeline
+from langchain_qdrant import QdrantVectorStore
 from transformers import BitsAndBytesConfig
 
 LOGLEVEL = os.environ.get("LOGLEVEL", "WARNING").upper()
@@ -21,16 +23,22 @@ logging.basicConfig(level=LOGLEVEL)
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 model_id = "llm-jp/llm-jp-3-1.8b-instruct3"
-chat_model = None
+llm = None
+embedding_model_id = "retrieva-jp/amber-large"
+qdrant_collection_name = "su-ai-chatbot"
 
 logging.info("Starting the app...")
+
+
+def format_docs(docs):
+    return "\n\n".join(doc.page_content for doc in docs)
 
 
 def response_fn(message, history):
     DEFAULT_SYSTEM_PROMPT = "あなたは誠実で優秀な日本人のアシスタントです。特に指示が無い場合は、常に日本語で回答してください。"
 
-    global chat_model
-    if chat_model is None:
+    global llm
+    if llm is None:
         logging.info("Loading chat model...")
 
         quantization_config = BitsAndBytesConfig(
@@ -53,15 +61,40 @@ def response_fn(message, history):
             model_kwargs={"quantization_config": quantization_config},
         )
 
-        chat_model = ChatHuggingFace(llm=llm)
+        model_kwargs = {"device": device}
+        embedding = HuggingFaceEmbeddings(
+            model_name=embedding_model_id,
+            model_kwargs=model_kwargs,
+        )
+
+        template = """User:
+あなたは質問応答タスクのアシスタントです。
+以下のコンテキストに基づいて質問に答えます。答えがわからない場合は、わからないと言ってください。最大 3 つの文を使用し、回答は簡潔にしてください。
+Question : {question}
+Context : {context}
+Answer :
+"""
+        prompt = PromptTemplate.from_template(template)
+
+        vector_store = QdrantVectorStore.from_existing_collection(
+            embedding=embedding,
+            collection_name=qdrant_collection_name,
+            url="http://REDACTED_IP:6333",
+        )
 
     logging.info(f"Generating response for message: {message}")
 
-    messages = [
-        SystemMessage(content=DEFAULT_SYSTEM_PROMPT),
-        HumanMessage(content=message),
-    ]
-    output = chat_model.invoke(messages).content
+    qa_chain = (
+        {
+            "context": vector_store.as_retriever() | format_docs,
+            "question": RunnablePassthrough(),
+        }
+        | prompt
+        | llm
+        | StrOutputParser()
+    )
+
+    output = qa_chain.invoke(message)
 
     return output
 
