@@ -1,10 +1,4 @@
-FROM python:3.13-slim-bookworm
-
-RUN set -eux; \
-	apt update; \
-	apt install -y --no-install-recommends \
-		build-essential \
-	;
+FROM python:3.13-bookworm
 
 WORKDIR /app
 
