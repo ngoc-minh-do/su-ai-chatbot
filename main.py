@@ -9,22 +9,28 @@ pathlib.Path(os.environ.get("HF_HUB_CACHE")).mkdir(parents=True, exist_ok=True)
 import gradio as gr
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer, pipeline
+import logging
 
-device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+LOGLEVEL = os.environ.get("LOGLEVEL", "WARNING").upper()
+logging.basicConfig(level=LOGLEVEL)
+
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 model_id = "llm-jp/llm-jp-3-1.8b-instruct3"
 model = None
 tokenizer = None
 
 
+logging.info("Starting the app...")
+
+
 def response_fn(message, history):
     DEFAULT_SYSTEM_PROMPT = "あなたは誠実で優秀な日本人のアシスタントです。特に指示が無い場合は、常に日本語で回答してください。"
-    
+
     global model, tokenizer
     if model is None:
-        print("Loading model and tokenizer...")
-        tokenizer = AutoTokenizer.from_pretrained(
-            model_id, trust_remote_code=True
-        )
+        logging.info("Loading model and tokenizer...")
+
+        tokenizer = AutoTokenizer.from_pretrained(model_id, trust_remote_code=True)
         model = AutoModelForCausalLM.from_pretrained(
             model_id,
             device_map="auto",
