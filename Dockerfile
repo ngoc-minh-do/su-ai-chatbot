@@ -1,5 +1,11 @@
 FROM python:3.13-slim-bookworm
 
+RUN set -eux; \
+	apt update; \
+	apt install -y --no-install-recommends \
+		build-essential \
+	;
+
 WORKDIR /app
 
 COPY pyproject.toml poetry.lock .
