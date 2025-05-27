@@ -23,9 +23,11 @@ logging.basicConfig(level=LOGLEVEL)
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 model_id = "llm-jp/llm-jp-3-1.8b-instruct3"
-llm = None
 embedding_model_id = "retrieva-jp/amber-large"
 qdrant_collection_name = "su-ai-chatbot"
+llm = None
+vector_store = None
+prompt = None
 
 logging.info("Starting the app...")
 
@@ -37,7 +39,7 @@ def format_docs(docs):
 def response_fn(message, history):
     DEFAULT_SYSTEM_PROMPT = "あなたは誠実で優秀な日本人のアシスタントです。特に指示が無い場合は、常に日本語で回答してください。"
 
-    global llm
+    global llm, vector_store, prompt
     if llm is None:
         logging.info("Loading chat model...")
 
