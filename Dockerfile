@@ -2,8 +2,13 @@ FROM python:3.13-bookworm
 
 WORKDIR /app
 
+RUN pip install \
+    poetry \
+    # For building sentencepiece
+    cmake
+
 COPY pyproject.toml poetry.lock .
-RUN pip install poetry && poetry install --only main --no-root --no-directory
+RUN poetry install --only main --no-root --no-directory
 
 COPY . .
 RUN poetry install --only main
