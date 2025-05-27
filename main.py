@@ -68,7 +68,7 @@ def response_fn(message, history):
         )
 
         template = """User:
-あなたは質問応答タスクのアシスタントです。
+あなたはSu AI、質問応答タスクのアシスタントです。
 以下のコンテキストに基づいて質問に答えます。答えがわからない場合は、わからないと言ってください。最大 3 つの文を使用し、回答は簡潔にしてください。
 Question : {question}
 Context : {context}

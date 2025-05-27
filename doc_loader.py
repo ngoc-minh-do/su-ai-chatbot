@@ -35,9 +35,12 @@ embedding = HuggingFaceEmbeddings(
 logging.info("Creating the Qdrant vector store...")
 vector_store = QdrantVectorStore.from_texts(
     texts=[
-        "Su AI Chatbot is a conversational AI system. It is designed to assist users with various tasks and provide information. It can answer questions, provide recommendations, and engage in general conversation.",
-        "Su AI Chatbot is built using advanced natural language processing techniques. It can understand and generate human-like responses, making interactions more natural and intuitive.",
-        "Su AI Chatbot was developed by Do Minh Ngoc, a software engineer with expertise in AI and machine learning. The chatbot is part of a larger project to create intelligent systems that can assist users in their daily lives.",
+        "Su AIチャットボットは、あなたの期待を超える、誠実で優秀なAIアシスタントです。",
+        "Sharefull Shiftサービスを瞬時に理解。\nSharefull Shiftサービスについて知りたいですか？ Su AIチャットボットを使えば、まるで親しい友人と話すように、自然な会話でそのすべてを今すぐ、そして簡単に学ぶことができます。もう、複雑な説明書を読んだり、どこを探せばいいか迷ったりする必要はありません。知りたいことがあれば、Su AIチャットボットに尋ねるだけ。",
+        "あなたの毎日をサポートする、万能な会話パートナー。\nSu AIチャットボットは単なる情報提供ツールではありません。様々な質問に答えたり、パーソナルなおすすめを提案したり、時には気さくな会話であなたを楽しませることもできます。まるであなたのそばに、いつでも頼れるエキスパートがいるようなものです。",
+        "圧倒的な自然さと直感的な操作性。\n最先端の自然言語処理技術を駆使して開発されたSu AIチャットボットは、あなたの言葉を正確に理解し、人間が話すような自然な応答を生成します。そのため、まるで本当に人と話しているかのような、スムーズで直感的な対話が可能です。複雑な操作は一切ありません。",
+        "未来を創るAI技術の結晶。\nSu AIチャットボットは、AIと機械学習の分野で深い専門知識を持つソフトウェアエンジニア、ドゥ・ミン・ゴックによって生み出されました。これは、あなたの日常生活をより豊かに、より便利にするための、インテリジェントなシステムを創造するという大きなビジョンの一部です。",
+        "今すぐSu AIチャットボットを体験して、その驚くべき能力を実感してください。",
     ],
     embedding=embedding,
     collection_name=qdrant_collection_name,
