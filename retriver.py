@@ -7,8 +7,10 @@ import torch
 from bs4 import BeautifulSoup
 from dotenv import load_dotenv
 from langchain_community.document_loaders import RecursiveUrlLoader
+from langchain_community.document_transformers import EmbeddingsRedundantFilter
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_qdrant import QdrantVectorStore
+from langchain_text_splitters import RecursiveCharacterTextSplitter
 
 load_dotenv(".env.prod" if os.environ.get("prod") else ".env")
 pathlib.Path(os.environ.get("TRANSFORMERS_CACHE")
@@ -47,31 +49,56 @@ vector_store = QdrantVectorStore.from_texts(
 
 def bs4_extractor(html: str) -> str:
     soup = BeautifulSoup(html, "lxml")
-    return re.sub(r"[\n\s]{2,}", "\n\n", soup.text).strip()
+    return re.sub(r"(\n\s*){4,}", "\n\n\n", soup.text).strip()
 
 
 logging.info("Loading web pages...")
 web_paths = [
-    # {"url": "https://www.sync-up.jp", "max_depth": 2},
+    {"url": "https://www.sync-up.jp", "max_depth": 10},
     {"url": "https://knowledge.sync-up.jp/knowledge", "max_depth": 10},
 ]
 
+docs = []
 for web_path in web_paths:
     logging.info("Loading web page: %s", web_path.get("url"))
 
     loader = RecursiveUrlLoader(
         url=web_path.get("url"),
         max_depth=web_path.get("max_depth"),
-        extractor=bs4_extractor
+        extractor=bs4_extractor,
+        exclude_dirs=[
+            "https://www.sync-up.jp/news",
+            "https://www.sync-up.jp/seminar",
+            "https://knowledge.sync-up.jp/knowledge/2018",
+            "https://knowledge.sync-up.jp/knowledge/2019",
+            "https://knowledge.sync-up.jp/knowledge/2020",
+            "https://knowledge.sync-up.jp/knowledge/2021",
+            "https://knowledge.sync-up.jp/knowledge/2022",
+            "https://knowledge.sync-up.jp/knowledge/2023",
+            "https://knowledge.sync-up.jp/knowledge/2024",
+            "https://knowledge.sync-up.jp/knowledge/2025",
+        ]
     )
-    docs = loader.load()
-    logging.info("Loaded %d documents from web pages.", len(docs))
 
-    for doc in docs:
-        print(doc.metadata.get("source"))
+    text_splitter = RecursiveCharacterTextSplitter(
+        chunk_size=512,
+        chunk_overlap=100,
+        length_function=len,
+    )
 
-    for doc in docs:
-        print(doc.page_content[:1000])
+    docs.extend(loader.load_and_split(text_splitter=text_splitter))
 
-    # logging.info("Adding documents to the vector store...")
-    # vector_store.add_documents(docs)
+redundant_filter = EmbeddingsRedundantFilter(embeddings=embedding)
+docs = redundant_filter.transform_documents(
+    documents=docs,
+)
+
+logging.info("Loaded %d documents from web pages.", len(docs))
+
+# for doc_idx, doc in enumerate(docs):
+#     print(doc.metadata.get("source"))
+#     with open(f"v2-{doc_idx}.txt", "a") as f:
+#         f.write(doc.page_content)
+
+logging.info("Adding documents to the vector store...")
+vector_store.add_documents(docs)
