@@ -3,20 +3,19 @@ import os
 import pathlib
 import re
 
+from dotenv import load_dotenv
+
+load_dotenv(".env.prod" if os.environ.get("prod") else ".env")
+pathlib.Path(os.environ.get("TRANSFORMERS_CACHE")).mkdir(parents=True, exist_ok=True)
+pathlib.Path(os.environ.get("HF_HUB_CACHE")).mkdir(parents=True, exist_ok=True)
+
 import torch
 from bs4 import BeautifulSoup
-from dotenv import load_dotenv
 from langchain_community.document_loaders import RecursiveUrlLoader
 from langchain_community.document_transformers import EmbeddingsRedundantFilter
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_qdrant import QdrantVectorStore
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-
-load_dotenv(".env.prod" if os.environ.get("prod") else ".env")
-pathlib.Path(os.environ.get("TRANSFORMERS_CACHE")
-             ).mkdir(parents=True, exist_ok=True)
-pathlib.Path(os.environ.get("HF_HUB_CACHE")).mkdir(parents=True, exist_ok=True)
-
 
 LOGLEVEL = os.environ.get("LOGLEVEL", "WARNING").upper()
 logging.basicConfig(level=LOGLEVEL)
@@ -46,16 +45,54 @@ vector_store = QdrantVectorStore.from_texts(
     force_recreate=True,
 )
 
+seen_paras = set()
+
 
 def bs4_extractor(html: str) -> str:
     soup = BeautifulSoup(html, "lxml")
-    return re.sub(r"(\n\s*){4,}", "\n\n\n", soup.text).strip()
+    html_string = re.sub(r"(\n\s*){2,}", "\n\n", soup.text).strip()
+
+    html_string_paras = []
+    for para in html_string.split("\n\n"):
+        if para not in seen_paras:
+            seen_paras.add(para)
+            html_string_paras.append(para)
+
+    return "\n\n".join(html_string_paras)
 
 
 logging.info("Loading web pages...")
 web_paths = [
-    {"url": "https://www.sync-up.jp", "max_depth": 10},
-    {"url": "https://knowledge.sync-up.jp/knowledge", "max_depth": 10},
+    {
+        "url": "https://www.sync-up.jp",
+        "max_depth": 10,
+        "exclude_dirs": [
+            "https://www.sync-up.jp/seminar",
+            "https://www.sync-up.jp/news",
+        ],
+    },
+    {
+        "url": "https://knowledge.sync-up.jp/knowledge",
+        "max_depth": 10,
+        "exclude_dirs": [
+            "https://knowledge.sync-up.jp/knowledge/2018",
+            "https://knowledge.sync-up.jp/knowledge/2019",
+            "https://knowledge.sync-up.jp/knowledge/2020",
+            "https://knowledge.sync-up.jp/knowledge/2021",
+            "https://knowledge.sync-up.jp/knowledge/2022",
+            "https://knowledge.sync-up.jp/knowledge/2023",
+            "https://knowledge.sync-up.jp/knowledge/2024",
+            "https://knowledge.sync-up.jp/knowledge/2025",
+        ],
+    },
+    {"url": "https://www.sync-up.jp/news/20231001_01-0", "max_depth": 1},
+    {
+        "url": "https://www.sync-up.jp/news",
+        "max_depth": 2,
+        "exclude_dirs": [
+            "https://www.sync-up.jp/news/rss.xml",
+        ],
+    },
 ]
 
 docs = []
@@ -66,23 +103,12 @@ for web_path in web_paths:
         url=web_path.get("url"),
         max_depth=web_path.get("max_depth"),
         extractor=bs4_extractor,
-        exclude_dirs=[
-            "https://www.sync-up.jp/news",
-            "https://www.sync-up.jp/seminar",
-            "https://knowledge.sync-up.jp/knowledge/2018",
-            "https://knowledge.sync-up.jp/knowledge/2019",
-            "https://knowledge.sync-up.jp/knowledge/2020",
-            "https://knowledge.sync-up.jp/knowledge/2021",
-            "https://knowledge.sync-up.jp/knowledge/2022",
-            "https://knowledge.sync-up.jp/knowledge/2023",
-            "https://knowledge.sync-up.jp/knowledge/2024",
-            "https://knowledge.sync-up.jp/knowledge/2025",
-        ]
+        exclude_dirs=web_path.get("exclude_dirs"),
     )
 
     text_splitter = RecursiveCharacterTextSplitter(
         chunk_size=512,
-        chunk_overlap=100,
+        chunk_overlap=50,
         length_function=len,
     )
 
@@ -97,7 +123,7 @@ logging.info("Loaded %d documents from web pages.", len(docs))
 
 # for doc_idx, doc in enumerate(docs):
 #     print(doc.metadata.get("source"))
-#     with open(f"v2-{doc_idx}.txt", "a") as f:
+#     with open(f"v4-{doc_idx}.txt", "a") as f:
 #         f.write(doc.page_content)
 
 logging.info("Adding documents to the vector store...")
