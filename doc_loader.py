@@ -72,6 +72,8 @@ web_paths = [
         "exclude_dirs": [
             "https://www.sync-up.jp/seminar",
             "https://www.sync-up.jp/news",
+            "https://www.sync-up.jp/shift_users_case/rss.xml",
+            "https://www.sync-up.jp/media/resource/rss.xml",
         ],
     },
     {
