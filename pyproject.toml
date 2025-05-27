@@ -22,6 +22,9 @@ bitsandbytes = "^0.45.5"
 qdrant-client = "^1.14.2"
 sentence-transformers = "^4.1.0"
 sentencepiece = {git = "https://github.com/google/sentencepiece.git", subdirectory = "python"}
+langchain-community = "^0.3.24"
+beautifulsoup4 = "^4.13.4"
+lxml = "^5.4.0"
 
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]

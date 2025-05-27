@@ -37,8 +37,6 @@ def format_docs(docs):
 
 
 def response_fn(message, history):
-    DEFAULT_SYSTEM_PROMPT = "あなたは誠実で優秀な日本人のアシスタントです。特に指示が無い場合は、常に日本語で回答してください。"
-
     global llm, vector_store, prompt
     if llm is None:
         logging.info("Loading chat model...")
