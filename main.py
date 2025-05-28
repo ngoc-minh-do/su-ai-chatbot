@@ -11,11 +11,18 @@ import logging
 
 import gradio as gr
 import torch
+from langchain.retrievers import ContextualCompressionRetriever
+from langchain.retrievers.document_compressors import (
+    DocumentCompressorPipeline,
+    EmbeddingsFilter,
+)
+from langchain_community.document_transformers import EmbeddingsRedundantFilter
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import PromptTemplate
 from langchain_core.runnables import RunnablePassthrough
 from langchain_huggingface import HuggingFaceEmbeddings, HuggingFacePipeline
 from langchain_qdrant import QdrantVectorStore
+from langchain_text_splitters import CharacterTextSplitter
 from transformers import BitsAndBytesConfig
 
 LOGLEVEL = os.environ.get("LOGLEVEL", "WARNING").upper()
@@ -28,7 +35,7 @@ qdrant_collection_name = "su-ai-chatbot"
 llm = None
 vector_store = None
 prompt = None
-
+compression_retriever = None
 logging.info("Starting the app...")
 
 
@@ -36,8 +43,16 @@ def format_docs(docs):
     return "\n\n".join(doc.page_content for doc in docs)
 
 
+def pretty_print_docs(docs):
+    print(
+        f"\n{'-' * 100}\n".join(
+            [f"Document {i + 1}:\n\n" + d.page_content for i, d in enumerate(docs)]
+        )
+    )
+
+
 def response_fn(message, history):
-    global llm, vector_store, prompt
+    global llm, vector_store, prompt, compression_retriever
     if llm is None:
         logging.info("Loading chat model...")
 
@@ -62,7 +77,7 @@ def response_fn(message, history):
         )
 
         model_kwargs = {"device": device}
-        embedding = HuggingFaceEmbeddings(
+        embeddings = HuggingFaceEmbeddings(
             model_name=embedding_model_id,
             model_kwargs=model_kwargs,
         )
@@ -77,16 +92,33 @@ Answer :
         prompt = PromptTemplate.from_template(template)
 
         vector_store = QdrantVectorStore.from_existing_collection(
-            embedding=embedding,
+            embedding=embeddings,
             collection_name=qdrant_collection_name,
             url="http://REDACTED_IP:6333",
+        )
+
+        splitter = CharacterTextSplitter(
+            chunk_size=300, chunk_overlap=0, separator=". "
+        )
+        redundant_filter = EmbeddingsRedundantFilter(embeddings=embeddings)
+        relevant_filter = EmbeddingsFilter(
+            embeddings=embeddings,
+            # similarity_threshold=0.5,
+        )
+        pipeline_compressor = DocumentCompressorPipeline(
+            transformers=[splitter, redundant_filter, relevant_filter]
+        )
+
+        compression_retriever = ContextualCompressionRetriever(
+            base_compressor=pipeline_compressor,
+            base_retriever=vector_store.as_retriever(),
         )
 
     logging.info(f"Generating response for message: {message}")
 
     qa_chain = (
         {
-            "context": vector_store.as_retriever() | format_docs,
+            "context": compression_retriever | format_docs,
             "question": RunnablePassthrough(),
         }
         | prompt
@@ -95,6 +127,9 @@ Answer :
     )
 
     output = qa_chain.invoke(message)
+
+    # pretty_print_docs(vector_store.similarity_search(message))
+    # pretty_print_docs(compression_retriever.invoke(message))
 
     return output
 
