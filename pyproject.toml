@@ -25,6 +25,7 @@ sentencepiece = {git = "https://github.com/google/sentencepiece.git", subdirecto
 langchain-community = "^0.3.24"
 beautifulsoup4 = "^4.13.4"
 lxml = "^5.4.0"
+grandalf = "^0.8"
 
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]

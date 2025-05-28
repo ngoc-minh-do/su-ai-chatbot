@@ -45,7 +45,7 @@ def format_docs(docs):
 
 def pretty_print_docs(docs):
     for i, d in enumerate(docs):
-        print(
+        logging.debug(
             f"{'-' * 100}\nDocument {i + 1}:\nUrl: {d.metadata.get('source')}\n\n{d.page_content}\n"
         )
 
@@ -64,9 +64,11 @@ def create_rag_chain():
         model_id=model_id,
         task="text-generation",
         pipeline_kwargs=dict(
-            max_new_tokens=512,
-            do_sample=False,
-            repetition_penalty=1.03,
+            max_new_tokens=100,
+            do_sample=True,
+            top_p=0.95,
+            temperature=0.7,
+            repetition_penalty=1.05,
             return_full_text=False,
         ),
         device=device,
@@ -81,12 +83,24 @@ def create_rag_chain():
         model_kwargs=model_kwargs,
     )
 
-    template = """System:
-あなたはSu AI、質問応答タスクのアシスタントです。
-以下のコンテキストに基づいて質問に答えます。答えがわからない場合は、わからないと言ってください。最大 3 つの文を使用し、回答は簡潔にしてください。
-Question : {question}
-Context : {context}
-Answer :
+    template = """
+### 命令:
+あなたはシェアフルシフトのAIアシスタントです。シェアフルシフトは、ユーザーが勤務シフトを作成・管理するためのプラットフォームです。あなたの役割は、ユーザーがシステムを効果的に使えるようにサポートし、質問に答え、シフトスケジュールの管理を手助けすることです。
+
+あなたが行うべきこと:
+- シフトの作成、編集、キャンセル、割り当て方法の説明
+- シフトスケジュールの確認方法や通知機能の使い方の案内
+- よくある問題（例：シフトの重複、スケジュールが表示されない等）のサポート
+- やさしく、丁寧で、分かりやすい言葉遣いで対応すること
+
+ユーザーの質問があいまいな場合は、必ず確認の質問をし、必要に応じてステップバイステップで案内してください。
+### コンテキスト:
+{context}
+
+### ユーザーからの質問:
+{question}
+
+### アシスタントの返答:
 """
     prompt = PromptTemplate.from_template(template)
 
@@ -125,7 +139,7 @@ Answer :
         | StrOutputParser()
     )
 
-    print(rag_chain.get_graph())
+    rag_chain.get_graph().print_ascii()
 
     return rag_chain
 
