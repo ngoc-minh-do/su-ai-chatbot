@@ -36,7 +36,7 @@ logging.info("Creating the Qdrant vector store...")
 vector_store = QdrantVectorStore.from_texts(
     texts=[
         "Su AIチャットボットは、あなたの期待を超える、誠実で優秀なAIアシスタントです。",
-        "Sharefull Shiftサービスを瞬時に理解。\nSharefull Shiftサービスについて知りたいですか？ Su AIチャットボットを使えば、まるで親しい友人と話すように、自然な会話でそのすべてを今すぐ、そして簡単に学ぶことができます。もう、複雑な説明書を読んだり、どこを探せばいいか迷ったりする必要はありません。知りたいことがあれば、Su AIチャットボットに尋ねるだけ。",
+        "シェアフルシフトサービスを瞬時に理解。\nシェアフルシフトサービスについて知りたいですか？ Su AIチャットボットを使えば、まるで親しい友人と話すように、自然な会話でそのすべてを今すぐ、そして簡単に学ぶことができます。もう、複雑な説明書を読んだり、どこを探せばいいか迷ったりする必要はありません。知りたいことがあれば、Su AIチャットボットに尋ねるだけ。",
         "あなたの毎日をサポートする、万能な会話パートナー。\nSu AIチャットボットは単なる情報提供ツールではありません。様々な質問に答えたり、パーソナルなおすすめを提案したり、時には気さくな会話であなたを楽しませることもできます。まるであなたのそばに、いつでも頼れるエキスパートがいるようなものです。",
         "圧倒的な自然さと直感的な操作性。\n最先端の自然言語処理技術を駆使して開発されたSu AIチャットボットは、あなたの言葉を正確に理解し、人間が話すような自然な応答を生成します。そのため、まるで本当に人と話しているかのような、スムーズで直感的な対話が可能です。複雑な操作は一切ありません。",
         "未来を創るAI技術の結晶。\nSu AIチャットボットは、AIと機械学習の分野で深い専門知識を持つソフトウェアエンジニア、ドゥ・ミン・ゴックによって生み出されました。これは、あなたの日常生活をより豊かに、より便利にするための、インテリジェントなシステムを創造するという大きなビジョンの一部です。",
@@ -67,16 +67,6 @@ def bs4_extractor(html: str) -> str:
 logging.info("Loading web pages...")
 web_paths = [
     {
-        "url": "https://www.sync-up.jp",
-        "max_depth": 10,
-        "exclude_dirs": [
-            "https://www.sync-up.jp/seminar",
-            "https://www.sync-up.jp/news",
-            "https://www.sync-up.jp/shift_users_case/rss.xml",
-            "https://www.sync-up.jp/media/resource/rss.xml",
-        ],
-    },
-    {
         "url": "https://knowledge.sync-up.jp/knowledge",
         "max_depth": 10,
         "exclude_dirs": [
@@ -91,13 +81,20 @@ web_paths = [
         ],
     },
     {"url": "https://www.sync-up.jp/news/20231001_01-0", "max_depth": 1},
+    {"url": "https://blog.sync-up.jp/tencho-lab/086", "max_depth": 1},
+    {"url": "https://www.sync-up.jp", "max_depth": 1},
+    {"url": "https://www.sync-up.jp/introduction", "max_depth": 1},
+    {"url": "https://blog.sync-up.jp/tencho-lab/062", "max_depth": 1},
+    {"url": "https://www.persol-innovation.co.jp/news/2021-1206", "max_depth": 1},
     {
-        "url": "https://www.sync-up.jp/news",
-        "max_depth": 2,
-        "exclude_dirs": [
-            "https://www.sync-up.jp/news/rss.xml",
-        ],
+        "url": "https://prtimes.jp/main/html/rd/p/000000120.000124219.html",
+        "max_depth": 1,
     },
+    {
+        "url": "https://www.wantedly.com/companies/sharefull/post_articles/934409",
+        "max_depth": 1,
+    },
+    {"url": "https://www.persol-innovation.co.jp/news/2021-1206", "max_depth": 1},
 ]
 
 docs = []

@@ -11,15 +11,15 @@ import logging
 
 import gradio as gr
 import torch
+from langchain.chains.combine_documents import create_stuff_documents_chain
+from langchain.chains.retrieval import create_retrieval_chain
 from langchain.retrievers import ContextualCompressionRetriever
 from langchain.retrievers.document_compressors import (
     DocumentCompressorPipeline,
     EmbeddingsFilter,
 )
 from langchain_community.document_transformers import EmbeddingsRedundantFilter
-from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import PromptTemplate
-from langchain_core.runnables import RunnablePassthrough
 from langchain_huggingface import HuggingFaceEmbeddings, HuggingFacePipeline
 from langchain_qdrant import QdrantVectorStore
 from langchain_text_splitters import CharacterTextSplitter
@@ -32,106 +32,89 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 model_id = "llm-jp/llm-jp-3-1.8b-instruct3"
 embedding_model_id = "retrieva-jp/amber-large"
 qdrant_collection_name = "su-ai-chatbot"
-llm = None
-vector_store = None
-prompt = None
-compression_retriever = None
+rag_chain = None
 logging.info("Starting the app...")
 
 
-def format_docs(docs):
-    return "\n\n".join(doc.page_content for doc in docs)
+def create_rag_chain():
+    logging.info("Loading chat model...")
 
-
-def pretty_print_docs(docs):
-    print(
-        f"\n{'-' * 100}\n".join(
-            [f"Document {i + 1}:\n\n" + d.page_content for i, d in enumerate(docs)]
-        )
+    quantization_config = BitsAndBytesConfig(
+        load_in_4bit=True,
+        bnb_4bit_quant_type="nf4",
+        bnb_4bit_compute_dtype="float16",
+        bnb_4bit_use_double_quant=True,
     )
 
+    llm = HuggingFacePipeline.from_model_id(
+        model_id=model_id,
+        task="text-generation",
+        pipeline_kwargs=dict(
+            max_new_tokens=512,
+            do_sample=False,
+            repetition_penalty=1.03,
+            return_full_text=False,
+        ),
+        device=device,
+        model_kwargs={"quantization_config": quantization_config},
+    )
 
-def response_fn(message, history):
-    global llm, vector_store, prompt, compression_retriever
-    if llm is None:
-        logging.info("Loading chat model...")
+    logging.info("Creating rag chain...")
 
-        quantization_config = BitsAndBytesConfig(
-            load_in_4bit=True,
-            bnb_4bit_quant_type="nf4",
-            bnb_4bit_compute_dtype="float16",
-            bnb_4bit_use_double_quant=True,
-        )
+    model_kwargs = {"device": device}
+    embeddings = HuggingFaceEmbeddings(
+        model_name=embedding_model_id,
+        model_kwargs=model_kwargs,
+    )
 
-        llm = HuggingFacePipeline.from_model_id(
-            model_id=model_id,
-            task="text-generation",
-            pipeline_kwargs=dict(
-                max_new_tokens=512,
-                do_sample=False,
-                repetition_penalty=1.03,
-                return_full_text=False,
-            ),
-            device=device,
-            model_kwargs={"quantization_config": quantization_config},
-        )
-
-        model_kwargs = {"device": device}
-        embeddings = HuggingFaceEmbeddings(
-            model_name=embedding_model_id,
-            model_kwargs=model_kwargs,
-        )
-
-        template = """User:
+    template = """User:
 あなたはSu AI、質問応答タスクのアシスタントです。
 以下のコンテキストに基づいて質問に答えます。答えがわからない場合は、わからないと言ってください。最大 3 つの文を使用し、回答は簡潔にしてください。
-Question : {question}
+Question : {input}
 Context : {context}
 Answer :
 """
-        prompt = PromptTemplate.from_template(template)
+    prompt = PromptTemplate.from_template(template)
 
-        vector_store = QdrantVectorStore.from_existing_collection(
-            embedding=embeddings,
-            collection_name=qdrant_collection_name,
-            url="http://REDACTED_IP:6333",
-        )
+    vector_store = QdrantVectorStore.from_existing_collection(
+        embedding=embeddings,
+        collection_name=qdrant_collection_name,
+        url="http://REDACTED_IP:6333",
+    )
 
-        splitter = CharacterTextSplitter(
-            chunk_size=300, chunk_overlap=0, separator=". "
-        )
-        redundant_filter = EmbeddingsRedundantFilter(embeddings=embeddings)
-        relevant_filter = EmbeddingsFilter(
-            embeddings=embeddings,
-            # similarity_threshold=0.5,
-        )
-        pipeline_compressor = DocumentCompressorPipeline(
-            transformers=[splitter, redundant_filter, relevant_filter]
-        )
+    splitter = CharacterTextSplitter(chunk_size=300, chunk_overlap=0, separator=". ")
+    redundant_filter = EmbeddingsRedundantFilter(embeddings=embeddings)
+    relevant_filter = EmbeddingsFilter(
+        embeddings=embeddings,
+        similarity_threshold=0.5,
+    )
+    pipeline_compressor = DocumentCompressorPipeline(
+        transformers=[splitter, redundant_filter, relevant_filter]
+    )
 
-        compression_retriever = ContextualCompressionRetriever(
-            base_compressor=pipeline_compressor,
-            base_retriever=vector_store.as_retriever(),
-        )
+    compression_retriever = ContextualCompressionRetriever(
+        base_compressor=pipeline_compressor,
+        base_retriever=vector_store.as_retriever(),
+    )
+
+    combine_docs_chain = create_stuff_documents_chain(llm, prompt)
+    rag_chain = create_retrieval_chain(compression_retriever, combine_docs_chain)
+
+    print(rag_chain.get_graph())
+
+    return rag_chain
+
+
+def response_fn(message, history):
+    global rag_chain
+    if rag_chain is None:
+        rag_chain = create_rag_chain()
 
     logging.info(f"Generating response for message: {message}")
 
-    qa_chain = (
-        {
-            "context": compression_retriever | format_docs,
-            "question": RunnablePassthrough(),
-        }
-        | prompt
-        | llm
-        | StrOutputParser()
-    )
+    output = rag_chain.invoke({"input": message})
 
-    output = qa_chain.invoke(message)
-
-    # pretty_print_docs(vector_store.similarity_search(message))
-    # pretty_print_docs(compression_retriever.invoke(message))
-
-    return output
+    return output.get("answer")
 
 
 demo = gr.ChatInterface(
