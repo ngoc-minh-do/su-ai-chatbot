@@ -153,6 +153,11 @@ def response_fn(message, history):
 
     output = rag_chain.invoke(message)
 
+    chunks = []
+    for chunk in rag_chain.stream(message):
+        chunks.append(chunk)
+        yield "".join(chunks)
+
     return output
 
 
