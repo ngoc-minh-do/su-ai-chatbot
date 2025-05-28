@@ -65,37 +65,14 @@ def bs4_extractor(html: str) -> str:
 
 
 logging.info("Loading web pages...")
-web_paths = [
-    {
-        "url": "https://knowledge.sync-up.jp/knowledge",
-        "max_depth": 10,
-        "exclude_dirs": [
-            "https://knowledge.sync-up.jp/knowledge/2018",
-            "https://knowledge.sync-up.jp/knowledge/2019",
-            "https://knowledge.sync-up.jp/knowledge/2020",
-            "https://knowledge.sync-up.jp/knowledge/2021",
-            "https://knowledge.sync-up.jp/knowledge/2022",
-            "https://knowledge.sync-up.jp/knowledge/2023",
-            "https://knowledge.sync-up.jp/knowledge/2024",
-            "https://knowledge.sync-up.jp/knowledge/2025",
-        ],
-    },
-    {"url": "https://www.sync-up.jp/news/20231001_01-0", "max_depth": 1},
-    {"url": "https://blog.sync-up.jp/tencho-lab/086", "max_depth": 1},
-    {"url": "https://www.sync-up.jp", "max_depth": 1},
-    {"url": "https://www.sync-up.jp/introduction", "max_depth": 1},
-    {"url": "https://blog.sync-up.jp/tencho-lab/062", "max_depth": 1},
-    {"url": "https://www.persol-innovation.co.jp/news/2021-1206", "max_depth": 1},
-    {
-        "url": "https://prtimes.jp/main/html/rd/p/000000120.000124219.html",
-        "max_depth": 1,
-    },
-    {
-        "url": "https://www.wantedly.com/companies/sharefull/post_articles/934409",
-        "max_depth": 1,
-    },
-    {"url": "https://www.persol-innovation.co.jp/news/2021-1206", "max_depth": 1},
-]
+
+with open("source.txt") as f:
+    lines = f.read().splitlines()
+
+web_paths = map(
+    lambda x: {"url": x},
+    lines,
+)
 
 docs = []
 for web_path in web_paths:
@@ -103,7 +80,7 @@ for web_path in web_paths:
 
     loader = RecursiveUrlLoader(
         url=web_path.get("url"),
-        max_depth=web_path.get("max_depth"),
+        max_depth=web_path.get("max_depth", 1),
         extractor=bs4_extractor,
         exclude_dirs=web_path.get("exclude_dirs"),
     )
