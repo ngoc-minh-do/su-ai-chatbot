@@ -11,15 +11,15 @@ import logging
 
 import gradio as gr
 import torch
-from langchain.chains.combine_documents import create_stuff_documents_chain
-from langchain.chains.retrieval import create_retrieval_chain
 from langchain.retrievers import ContextualCompressionRetriever
 from langchain.retrievers.document_compressors import (
     DocumentCompressorPipeline,
     EmbeddingsFilter,
 )
 from langchain_community.document_transformers import EmbeddingsRedundantFilter
+from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import PromptTemplate
+from langchain_core.runnables import RunnablePassthrough
 from langchain_huggingface import HuggingFaceEmbeddings, HuggingFacePipeline
 from langchain_qdrant import QdrantVectorStore
 from langchain_text_splitters import CharacterTextSplitter
@@ -34,6 +34,19 @@ embedding_model_id = "retrieva-jp/amber-large"
 qdrant_collection_name = "su-ai-chatbot"
 rag_chain = None
 logging.info("Starting the app...")
+
+
+def format_docs(docs):
+    pretty_print_docs(docs)
+
+    return "\n\n".join(doc.page_content for doc in docs)
+
+
+def pretty_print_docs(docs):
+    for i, d in enumerate(docs):
+        print(
+            f"{'-' * 100}\nDocument {i + 1}:\nUrl: {d.metadata.get('source')}\n\n{d.page_content}\n"
+        )
 
 
 def create_rag_chain():
@@ -67,10 +80,10 @@ def create_rag_chain():
         model_kwargs=model_kwargs,
     )
 
-    template = """User:
+    template = """System:
 あなたはSu AI、質問応答タスクのアシスタントです。
 以下のコンテキストに基づいて質問に答えます。答えがわからない場合は、わからないと言ってください。最大 3 つの文を使用し、回答は簡潔にしてください。
-Question : {input}
+Question : {question}
 Context : {context}
 Answer :
 """
@@ -86,7 +99,7 @@ Answer :
     redundant_filter = EmbeddingsRedundantFilter(embeddings=embeddings)
     relevant_filter = EmbeddingsFilter(
         embeddings=embeddings,
-        similarity_threshold=0.5,
+        similarity_threshold=0.2,
     )
     pipeline_compressor = DocumentCompressorPipeline(
         transformers=[splitter, redundant_filter, relevant_filter]
@@ -97,8 +110,15 @@ Answer :
         base_retriever=vector_store.as_retriever(),
     )
 
-    combine_docs_chain = create_stuff_documents_chain(llm, prompt)
-    rag_chain = create_retrieval_chain(compression_retriever, combine_docs_chain)
+    rag_chain = (
+        {
+            "context": compression_retriever | format_docs,
+            "question": RunnablePassthrough(),
+        }
+        | prompt
+        | llm
+        | StrOutputParser()
+    )
 
     print(rag_chain.get_graph())
 
@@ -112,9 +132,9 @@ def response_fn(message, history):
 
     logging.info(f"Generating response for message: {message}")
 
-    output = rag_chain.invoke({"input": message})
+    output = rag_chain.invoke(message)
 
-    return output.get("answer")
+    return output
 
 
 demo = gr.ChatInterface(
