@@ -44,6 +44,7 @@ def format_docs(docs):
 
 
 def pretty_print_docs(docs):
+    logging.debug(f"Number of documents retrieved: {len(docs)}")
     for i, d in enumerate(docs):
         logging.debug(
             f"{'-' * 100}\nDocument {i + 1}:\nUrl: {d.metadata.get('source')}\n\n{d.page_content}\n"
@@ -118,7 +119,7 @@ def create_rag_chain():
     redundant_filter = EmbeddingsRedundantFilter(embeddings=embeddings)
     relevant_filter = EmbeddingsFilter(
         embeddings=embeddings,
-        similarity_threshold=0.2,
+        similarity_threshold=0.5,
     )
     pipeline_compressor = DocumentCompressorPipeline(
         transformers=[splitter, redundant_filter, relevant_filter]
