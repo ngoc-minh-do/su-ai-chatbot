@@ -16,6 +16,7 @@ from langchain.retrievers.document_compressors import (
     DocumentCompressorPipeline,
     EmbeddingsFilter,
 )
+from langchain.retrievers.multi_query import MultiQueryRetriever
 from langchain_community.document_transformers import EmbeddingsRedundantFilter
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import PromptTemplate
@@ -95,6 +96,10 @@ Answer :
         url="http://REDACTED_IP:6333",
     )
 
+    multi_query_retriever = MultiQueryRetriever.from_llm(
+        retriever=vector_store.as_retriever(), llm=llm
+    )
+
     splitter = CharacterTextSplitter(chunk_size=300, chunk_overlap=0, separator=". ")
     redundant_filter = EmbeddingsRedundantFilter(embeddings=embeddings)
     relevant_filter = EmbeddingsFilter(
@@ -107,7 +112,7 @@ Answer :
 
     compression_retriever = ContextualCompressionRetriever(
         base_compressor=pipeline_compressor,
-        base_retriever=vector_store.as_retriever(),
+        base_retriever=multi_query_retriever,
     )
 
     rag_chain = (
