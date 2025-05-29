@@ -18,6 +18,8 @@ from langchain_qdrant import QdrantVectorStore
 from langchain_text_splitters import CharacterTextSplitter
 from transformers import BitsAndBytesConfig
 
+from pages import collect_data
+
 logger = logging.get_logger(__name__)
 
 rag_chain: Runnable = None
@@ -150,13 +152,17 @@ def response_fn(message, history):
 
 def main():
     logger.info("Starting the app...")
-    demo = gr.ChatInterface(
+    with gr.ChatInterface(
         response_fn,
         type="messages",
         save_history=True,
         css="footer{display:none !important}",
-    )
+    ) as demo:
+        demo.title = "Shareful Shift AI Assistant"
+        demo.description = "シェアフルシフトのAIアシスタントです。シフトの作成・管理について質問してください。"
 
+    with demo.route("Collect Data"):
+        collect_data.demo.render()
     demo.launch(server_name="0.0.0.0", server_port=7860)
 
 
