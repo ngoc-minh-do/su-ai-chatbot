@@ -1,13 +1,6 @@
-import os
-import pathlib
+from utils import constants, env, logging
 
-from dotenv import load_dotenv
-
-load_dotenv(".env.prod" if os.environ.get("prod") else ".env")
-pathlib.Path(os.environ.get("TRANSFORMERS_CACHE")).mkdir(parents=True, exist_ok=True)
-pathlib.Path(os.environ.get("HF_HUB_CACHE")).mkdir(parents=True, exist_ok=True)
-
-import logging
+env.load_env()
 
 import gradio as gr
 from langchain.retrievers import ContextualCompressionRetriever
@@ -19,19 +12,15 @@ from langchain.retrievers.multi_query import MultiQueryRetriever
 from langchain_community.document_transformers import EmbeddingsRedundantFilter
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import PromptTemplate
-from langchain_core.runnables import RunnablePassthrough
+from langchain_core.runnables import Runnable, RunnablePassthrough
 from langchain_huggingface import HuggingFaceEmbeddings, HuggingFacePipeline
 from langchain_qdrant import QdrantVectorStore
 from langchain_text_splitters import CharacterTextSplitter
 from transformers import BitsAndBytesConfig
 
-import constants
+logger = logging.get_logger(__name__)
 
-LOGLEVEL = os.environ.get("LOGLEVEL", "WARNING").upper()
-logging.basicConfig(level=LOGLEVEL)
-
-rag_chain = None
-logging.info("Starting the app...")
+rag_chain: Runnable = None
 
 
 def format_docs(docs):
@@ -41,15 +30,15 @@ def format_docs(docs):
 
 
 def pretty_print_docs(docs):
-    logging.debug(f"Number of documents retrieved: {len(docs)}")
+    logger.debug(f"Number of documents retrieved: {len(docs)}")
     for i, d in enumerate(docs):
-        logging.debug(
+        logger.debug(
             f"{'-' * 100}\nDocument {i + 1}:\nUrl: {d.metadata.get('source')}\n\n{d.page_content}\n"
         )
 
 
 def create_rag_chain():
-    logging.info("Loading chat model...")
+    logger.info("Loading chat model...")
 
     quantization_config = BitsAndBytesConfig(
         load_in_4bit=True,
@@ -73,7 +62,7 @@ def create_rag_chain():
         model_kwargs={"quantization_config": quantization_config},
     )
 
-    logging.info("Creating rag chain...")
+    logger.info("Creating rag chain...")
 
     model_kwargs = {"device": constants.device}
     embeddings = HuggingFaceEmbeddings(
@@ -147,7 +136,7 @@ def response_fn(message, history):
     if rag_chain is None:
         rag_chain = create_rag_chain()
 
-    logging.info(f"Generating response for message: {message}")
+    logger.info(f"Generating response for message: {message}")
 
     output = rag_chain.invoke(message)
 
@@ -159,12 +148,17 @@ def response_fn(message, history):
     return output
 
 
-demo = gr.ChatInterface(
-    response_fn,
-    type="messages",
-    save_history=True,
-    css="footer{display:none !important}",
-)
+def main():
+    logger.info("Starting the app...")
+    demo = gr.ChatInterface(
+        response_fn,
+        type="messages",
+        save_history=True,
+        css="footer{display:none !important}",
+    )
+
+    demo.launch(server_name="0.0.0.0", server_port=7860)
+
 
 if __name__ == "__main__":
-    demo.launch(server_name="0.0.0.0", server_port=7860)
+    main()
