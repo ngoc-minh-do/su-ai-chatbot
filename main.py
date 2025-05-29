@@ -10,7 +10,6 @@ pathlib.Path(os.environ.get("HF_HUB_CACHE")).mkdir(parents=True, exist_ok=True)
 import logging
 
 import gradio as gr
-import torch
 from langchain.retrievers import ContextualCompressionRetriever
 from langchain.retrievers.document_compressors import (
     DocumentCompressorPipeline,
@@ -26,13 +25,11 @@ from langchain_qdrant import QdrantVectorStore
 from langchain_text_splitters import CharacterTextSplitter
 from transformers import BitsAndBytesConfig
 
+import constants
+
 LOGLEVEL = os.environ.get("LOGLEVEL", "WARNING").upper()
 logging.basicConfig(level=LOGLEVEL)
 
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-model_id = "llm-jp/llm-jp-3-1.8b-instruct3"
-embedding_model_id = "retrieva-jp/amber-large"
-qdrant_collection_name = "su-ai-chatbot"
 rag_chain = None
 logging.info("Starting the app...")
 
@@ -62,7 +59,7 @@ def create_rag_chain():
     )
 
     llm = HuggingFacePipeline.from_model_id(
-        model_id=model_id,
+        model_id=constants.model_id,
         task="text-generation",
         pipeline_kwargs=dict(
             max_new_tokens=100,
@@ -72,15 +69,15 @@ def create_rag_chain():
             repetition_penalty=1.05,
             return_full_text=False,
         ),
-        device=device,
+        device=constants.device,
         model_kwargs={"quantization_config": quantization_config},
     )
 
     logging.info("Creating rag chain...")
 
-    model_kwargs = {"device": device}
+    model_kwargs = {"device": constants.device}
     embeddings = HuggingFaceEmbeddings(
-        model_name=embedding_model_id,
+        model_name=constants.embedding_model_id,
         model_kwargs=model_kwargs,
     )
 
@@ -107,8 +104,8 @@ def create_rag_chain():
 
     vector_store = QdrantVectorStore.from_existing_collection(
         embedding=embeddings,
-        collection_name=qdrant_collection_name,
-        url="http://REDACTED_IP:6333",
+        collection_name=constants.qdrant_collection_name,
+        url=constants.qdrant_url,
     )
 
     multi_query_retriever = MultiQueryRetriever.from_llm(

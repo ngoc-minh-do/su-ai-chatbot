@@ -5,11 +5,12 @@ import re
 
 from dotenv import load_dotenv
 
+import constants
+
 load_dotenv(".env.prod" if os.environ.get("prod") else ".env")
 pathlib.Path(os.environ.get("TRANSFORMERS_CACHE")).mkdir(parents=True, exist_ok=True)
 pathlib.Path(os.environ.get("HF_HUB_CACHE")).mkdir(parents=True, exist_ok=True)
 
-import torch
 from bs4 import BeautifulSoup
 from langchain_community.document_loaders import RecursiveUrlLoader
 from langchain_community.document_transformers import EmbeddingsRedundantFilter
@@ -20,15 +21,12 @@ from langchain_text_splitters import RecursiveCharacterTextSplitter
 LOGLEVEL = os.environ.get("LOGLEVEL", "WARNING").upper()
 logging.basicConfig(level=LOGLEVEL)
 
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-embedding_model_id = "retrieva-jp/amber-large"
-qdrant_collection_name = "su-ai-chatbot"
 vector_store = None
 
 logging.info("Initializing the embedding model...")
-model_kwargs = {"device": device}
+model_kwargs = {"device": constants.device}
 embedding = HuggingFaceEmbeddings(
-    model_name=embedding_model_id,
+    model_name=constants.embedding_model_id,
     model_kwargs=model_kwargs,
 )
 
@@ -43,8 +41,8 @@ vector_store = QdrantVectorStore.from_texts(
         "今すぐSu AIチャットボットを体験して、その驚くべき能力を実感してください。",
     ],
     embedding=embedding,
-    collection_name=qdrant_collection_name,
-    url="http://REDACTED_IP:6333",
+    collection_name=constants.qdrant_collection_name,
+    url=constants.qdrant_url,
     force_recreate=True,
 )
 
