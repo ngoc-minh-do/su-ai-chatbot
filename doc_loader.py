@@ -21,8 +21,6 @@ from langchain_text_splitters import RecursiveCharacterTextSplitter
 LOGLEVEL = os.environ.get("LOGLEVEL", "WARNING").upper()
 logging.basicConfig(level=LOGLEVEL)
 
-vector_store = None
-
 logging.info("Initializing the embedding model...")
 model_kwargs = {"device": constants.device}
 embedding = HuggingFaceEmbeddings(
@@ -83,11 +81,7 @@ for web_path in web_paths:
         exclude_dirs=web_path.get("exclude_dirs"),
     )
 
-    text_splitter = RecursiveCharacterTextSplitter(
-        chunk_size=512,
-        chunk_overlap=50,
-        length_function=len,
-    )
+    text_splitter = RecursiveCharacterTextSplitter()
 
     docs.extend(loader.load_and_split(text_splitter=text_splitter))
 
