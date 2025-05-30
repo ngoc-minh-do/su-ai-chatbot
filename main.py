@@ -18,7 +18,7 @@ from langchain_qdrant import QdrantVectorStore
 from langchain_text_splitters import CharacterTextSplitter
 from transformers import BitsAndBytesConfig
 
-from pages import collect_data
+from pages import training
 
 logger = logging.get_logger(__name__)
 
@@ -161,8 +161,8 @@ def main():
         demo.title = "Shareful Shift AI Assistant"
         demo.description = "シェアフルシフトのAIアシスタントです。シフトの作成・管理について質問してください。"
 
-    with demo.route("Collect Data"):
-        collect_data.demo.render()
+    with demo.route(name="トレーニング", path="/training"):
+        training.render()
     demo.launch(server_name="0.0.0.0", server_port=7860)
 
 
