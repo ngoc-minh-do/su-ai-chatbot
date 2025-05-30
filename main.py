@@ -1,76 +1,26 @@
-from utils import constants, env, logging
+from utils import env, logging
 
 env.load_env()
 
 import gradio as gr
-from langchain.retrievers import ContextualCompressionRetriever
-from langchain.retrievers.document_compressors import (
-    DocumentCompressorPipeline,
-    EmbeddingsFilter,
-)
-from langchain.retrievers.multi_query import MultiQueryRetriever
-from langchain_community.document_transformers import EmbeddingsRedundantFilter
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import PromptTemplate
 from langchain_core.runnables import Runnable, RunnablePassthrough
-from langchain_huggingface import HuggingFaceEmbeddings, HuggingFacePipeline
-from langchain_qdrant import QdrantVectorStore
-from langchain_text_splitters import CharacterTextSplitter
-from transformers import BitsAndBytesConfig
 
 from pages import training
+from utils import model
 
 logger = logging.get_logger(__name__)
 
 rag_chain: Runnable = None
 
 
-def format_docs(docs):
-    pretty_print_docs(docs)
-
-    return "\n\n".join(doc.page_content for doc in docs)
-
-
-def pretty_print_docs(docs):
-    logger.debug(f"Number of documents retrieved: {len(docs)}")
-    for i, d in enumerate(docs):
-        logger.debug(
-            f"{'-' * 100}\nDocument {i + 1}:\nUrl: {d.metadata.get('source')}\n\n{d.page_content}\n"
-        )
-
-
 def create_rag_chain():
-    logger.info("Loading chat model...")
-
-    quantization_config = BitsAndBytesConfig(
-        load_in_4bit=True,
-        bnb_4bit_quant_type="nf4",
-        bnb_4bit_compute_dtype="float16",
-        bnb_4bit_use_double_quant=True,
-    )
-
-    llm = HuggingFacePipeline.from_model_id(
-        model_id=constants.model_id,
-        task="text-generation",
-        pipeline_kwargs=dict(
-            max_new_tokens=100,
-            do_sample=True,
-            top_p=0.95,
-            temperature=0.7,
-            repetition_penalty=1.05,
-            return_full_text=False,
-        ),
-        device=constants.device,
-        model_kwargs={"quantization_config": quantization_config},
-    )
-
     logger.info("Creating rag chain...")
 
-    model_kwargs = {"device": constants.device}
-    embeddings = HuggingFaceEmbeddings(
-        model_name=constants.embedding_model_id,
-        model_kwargs=model_kwargs,
-    )
+    llm = model.get_llm()
+    vector_store = model.get_vector_store()
+    retriever = model.get_retriever(vector_store, llm=llm)
 
     template = """
 ### 命令:
@@ -82,7 +32,7 @@ def create_rag_chain():
 - よくある問題（例：シフトの重複、スケジュールが表示されない等）のサポート
 - やさしく、丁寧で、分かりやすい言葉遣いで対応すること
 
-ユーザーの質問があいまいな場合は、必ず確認の質問をし、必要に応じてステップバイステップで案内してください。
+ユーザーの質問があいまいな場合は、わからないと伝えてください。
 ### コンテキスト:
 {context}
 
@@ -93,34 +43,9 @@ def create_rag_chain():
 """
     prompt = PromptTemplate.from_template(template)
 
-    vector_store = QdrantVectorStore.from_existing_collection(
-        embedding=embeddings,
-        collection_name=constants.qdrant_collection_name,
-        url=constants.qdrant_url,
-    )
-
-    multi_query_retriever = MultiQueryRetriever.from_llm(
-        retriever=vector_store.as_retriever(), llm=llm
-    )
-
-    splitter = CharacterTextSplitter(chunk_size=300, chunk_overlap=0, separator=". ")
-    redundant_filter = EmbeddingsRedundantFilter(embeddings=embeddings)
-    relevant_filter = EmbeddingsFilter(
-        embeddings=embeddings,
-        similarity_threshold=0.5,
-    )
-    pipeline_compressor = DocumentCompressorPipeline(
-        transformers=[splitter, redundant_filter, relevant_filter]
-    )
-
-    compression_retriever = ContextualCompressionRetriever(
-        base_compressor=pipeline_compressor,
-        base_retriever=multi_query_retriever,
-    )
-
     rag_chain = (
         {
-            "context": compression_retriever | format_docs,
+            "context": retriever | model.format_docs,
             "question": RunnablePassthrough(),
         }
         | prompt
