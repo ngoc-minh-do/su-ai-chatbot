@@ -5,14 +5,14 @@ env.load_env()
 import gradio as gr
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import PromptTemplate
-from langchain_core.runnables import Runnable, RunnablePassthrough
+from langchain_core.runnables import RunnablePassthrough, RunnableSerializable
 
 from pages import training
 from utils import model
 
 logger = logging.get_logger(__name__)
 
-_rag_chain: Runnable = None
+_rag_chain: RunnableSerializable = None
 
 
 def create_rag_chain():
@@ -58,7 +58,7 @@ def create_rag_chain():
         | StrOutputParser()
     )
 
-    rag_chain.get_graph().print_ascii()
+    logger.debug("\n" + rag_chain.get_graph().draw_ascii())
 
     _rag_chain = rag_chain
 

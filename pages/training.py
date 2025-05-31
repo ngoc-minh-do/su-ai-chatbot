@@ -3,13 +3,14 @@ import re
 import gradio as gr
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import PromptTemplate
-from langchain_core.runnables import Runnable, RunnablePassthrough
+from langchain_core.runnables import RunnablePassthrough, RunnableSerializable
 
 from utils import logging, model
 
 logger = logging.get_logger(__name__)
 
-_question_chain: Runnable = None
+_question_chain: RunnableSerializable = None
+_answer_chain: RunnableSerializable = None
 
 
 def extract_question_only(output: str) -> str:
@@ -17,7 +18,7 @@ def extract_question_only(output: str) -> str:
     return output.replace("###", "").strip()
 
 
-def create_question_chain() -> Runnable:
+def create_question_chain() -> RunnableSerializable:
     global _question_chain
     if _question_chain is not None:
         logger.info("Question chain already created, returning existing instance.")
@@ -48,11 +49,50 @@ def create_question_chain() -> Runnable:
         | (lambda output: extract_question_only(output))
     )
 
-    question_chain.get_graph().print_ascii()
+    logger.debug("\n" + question_chain.get_graph().draw_ascii())
 
     _question_chain = question_chain
 
     return question_chain
+
+
+def create_answer_chain() -> RunnableSerializable:
+    global _answer_chain
+    if _answer_chain is not None:
+        logger.info("Answer chain already created, returning existing instance.")
+        return _answer_chain
+
+    logger.info("Creating answer chain...")
+
+    llm = model.get_llm()
+
+    template = """
+### 命令:
+あなたは丁寧で正確なアシスタントです。以下のコンテキストに基づいて、質問に対して的確かつ簡潔に答えてください。  
+必要に応じて、コンテキストの情報を活用してください。わからない場合は、無理に作り話をしないでください。
+
+### コンテキスト:
+{context}
+
+### 質問:
+{question}
+
+### 回答:
+"""
+
+    prompt = PromptTemplate.from_template(template)
+
+    answer_chain = (
+        prompt
+        | llm
+        | StrOutputParser()
+    )
+
+    logger.debug("\n" + answer_chain.get_graph().draw_ascii())
+
+    _answer_chain = answer_chain
+
+    return answer_chain
 
 
 def generate_qa():
@@ -65,9 +105,18 @@ def generate_qa():
     question_chain = create_question_chain()
 
     question = question_chain.invoke(context)
-    answer1 = "これは回答1のサンプルです。"
-    answer2 = "これは回答2のサンプルです。"
-    return question, answer1, answer2
+
+    yield question, None, None
+
+    answer_chain = create_answer_chain()
+
+    answer1 = answer_chain.invoke({"context": context, "question": question})
+
+    yield question, answer1, None
+
+    answer2 = answer_chain.invoke({"context": context, "question": question})
+
+    yield question, answer1, answer2
 
 
 def submit(question, answer):
