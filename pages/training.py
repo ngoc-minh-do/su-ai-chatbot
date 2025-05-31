@@ -1,3 +1,5 @@
+import re
+
 import gradio as gr
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import PromptTemplate
@@ -10,7 +12,12 @@ logger = logging.get_logger(__name__)
 _question_chain: Runnable = None
 
 
-def create_question_chain(context: str) -> Runnable:
+def extract_question_only(output: str) -> str:
+    output = re.sub(r"(回答|応答|答え).*$", "", output, flags=re.DOTALL)
+    return output.replace("###", "").strip()
+
+
+def create_question_chain() -> Runnable:
     global _question_chain
     if _question_chain is not None:
         logger.info("Question chain already created, returning existing instance.")
@@ -38,6 +45,7 @@ def create_question_chain(context: str) -> Runnable:
         | prompt
         | llm
         | StrOutputParser()
+        | (lambda output: extract_question_only(output))
     )
 
     question_chain.get_graph().print_ascii()
@@ -54,9 +62,9 @@ def generate_qa():
     sample_docs = vector_store.similarity_search("", k=5)
     context = model.format_docs(sample_docs)
 
-    question_chain = create_question_chain(context)
+    question_chain = create_question_chain()
 
-    question = question_chain.invoke({"context": context})
+    question = question_chain.invoke(context)
     answer1 = "これは回答1のサンプルです。"
     answer2 = "これは回答2のサンプルです。"
     return question, answer1, answer2
