@@ -3,7 +3,11 @@ import re
 import gradio as gr
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import PromptTemplate
-from langchain_core.runnables import RunnablePassthrough, RunnableSerializable
+from langchain_core.runnables import (
+    RunnableParallel,
+    RunnablePassthrough,
+    RunnableSerializable,
+)
 
 from utils import logging, model
 
@@ -82,11 +86,7 @@ def create_answer_chain() -> RunnableSerializable:
 
     prompt = PromptTemplate.from_template(template)
 
-    answer_chain = (
-        prompt
-        | llm
-        | StrOutputParser()
-    )
+    answer_chain = prompt | llm | StrOutputParser()
 
     logger.debug("\n" + answer_chain.get_graph().draw_ascii())
 
@@ -110,11 +110,12 @@ def generate_qa():
 
     answer_chain = create_answer_chain()
 
-    answer1 = answer_chain.invoke({"context": context, "question": question})
+    map_chain = RunnableParallel(answer1=answer_chain, answer2=answer_chain)
 
-    yield question, answer1, None
+    answer = map_chain.invoke({"context": context, "question": question})
 
-    answer2 = answer_chain.invoke({"context": context, "question": question})
+    answer1 = answer["answer1"]
+    answer2 = answer["answer2"]
 
     yield question, answer1, answer2
 

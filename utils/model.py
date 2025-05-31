@@ -53,6 +53,7 @@ def get_llm() -> BaseLLM:
         device=constants.device,
         model_kwargs={"quantization_config": quantization_config},
     )
+
     _llm = llm
 
     return llm
