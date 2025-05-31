@@ -1,12 +1,62 @@
 import gradio as gr
+from langchain_core.output_parsers import StrOutputParser
+from langchain_core.prompts import PromptTemplate
+from langchain_core.runnables import Runnable, RunnablePassthrough
 
-from utils import logging
+from utils import logging, model
 
 logger = logging.get_logger(__name__)
 
+_question_chain: Runnable = None
+
+
+def create_question_chain(context: str) -> Runnable:
+    global _question_chain
+    if _question_chain is not None:
+        logger.info("Question chain already created, returning existing instance.")
+        return _question_chain
+
+    logger.info("Creating question chain...")
+
+    llm = model.get_llm()
+
+    template = """
+### 命令:
+あなたは、与えられたコンテキストに基づいて質問のみを生成してください。回答は生成しないでください。
+
+### コンテキスト:
+{context}
+
+### 質問:
+"""
+    prompt = PromptTemplate.from_template(template)
+
+    question_chain = (
+        {
+            "context": RunnablePassthrough(),
+        }
+        | prompt
+        | llm
+        | StrOutputParser()
+    )
+
+    question_chain.get_graph().print_ascii()
+
+    _question_chain = question_chain
+
+    return question_chain
+
 
 def generate_qa():
-    question = "これはサンプルの質問です。"
+    logger.info("Generating question and answers...")
+
+    vector_store = model.get_vector_store()
+    sample_docs = vector_store.similarity_search("", k=5)
+    context = model.format_docs(sample_docs)
+
+    question_chain = create_question_chain(context)
+
+    question = question_chain.invoke({"context": context})
     answer1 = "これは回答1のサンプルです。"
     answer2 = "これは回答2のサンプルです。"
     return question, answer1, answer2
@@ -29,6 +79,7 @@ def render():
     生成された内容が不自然な場合は、自由に編集してから使用できます。
     2つのうち、より適切だと思う回答を選んでください。
     また、「質問」や「回答1」のテキストボックスに任意の内容を入力して、保存することもできます。
+    モデルをトレーニングするタイミングはゴックさんによる。
     """,
                 line_breaks=True,
             )

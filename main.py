@@ -12,10 +12,15 @@ from utils import model
 
 logger = logging.get_logger(__name__)
 
-rag_chain: Runnable = None
+_rag_chain: Runnable = None
 
 
 def create_rag_chain():
+    global _rag_chain
+    if _rag_chain is not None:
+        logger.info("RAG chain already created, returning existing instance.")
+        return _rag_chain
+
     logger.info("Creating rag chain...")
 
     llm = model.get_llm()
@@ -55,24 +60,20 @@ def create_rag_chain():
 
     rag_chain.get_graph().print_ascii()
 
+    _rag_chain = rag_chain
+
     return rag_chain
 
 
 def response_fn(message, history):
-    global rag_chain
-    if rag_chain is None:
-        rag_chain = create_rag_chain()
+    rag_chain = create_rag_chain()
 
     logger.info(f"Generating response for message: {message}")
-
-    output = rag_chain.invoke(message)
 
     chunks = []
     for chunk in rag_chain.stream(message):
         chunks.append(chunk)
         yield "".join(chunks)
-
-    return output
 
 
 def main():

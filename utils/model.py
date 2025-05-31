@@ -20,10 +20,18 @@ from transformers import BitsAndBytesConfig
 
 logger = logging.get_logger(__name__)
 
+_llm: BaseLLM = None
+_vector_store: VectorStore = None
+_retriever: ContextualCompressionRetriever = None
+
 
 def get_llm() -> BaseLLM:
-    logger.info("Loading llm...")
+    global _llm
+    if _llm is not None:
+        logger.info("LLM already loaded, returning existing instance.")
+        return _llm
 
+    logger.info("Loading llm...")
     quantization_config = BitsAndBytesConfig(
         load_in_4bit=True,
         bnb_4bit_quant_type="nf4",
@@ -45,11 +53,17 @@ def get_llm() -> BaseLLM:
         device=constants.device,
         model_kwargs={"quantization_config": quantization_config},
     )
+    _llm = llm
 
     return llm
 
 
 def get_vector_store() -> VectorStore:
+    global _vector_store
+    if _vector_store is not None:
+        logger.info("Vector store already loaded, returning existing instance.")
+        return _vector_store
+
     logger.info("Loading embeddings...")
     model_kwargs = {"device": constants.device}
     embeddings = HuggingFaceEmbeddings(
@@ -63,11 +77,17 @@ def get_vector_store() -> VectorStore:
         collection_name=constants.qdrant_collection_name,
         url=constants.qdrant_url,
     )
+    _vector_store = vector_store
 
     return vector_store
 
 
 def get_retriever(vector_store: VectorStore, llm: BaseLLM) -> BaseRetriever:
+    global _retriever
+    if _retriever is not None:
+        logger.info("Retriever already loaded, returning existing instance.")
+        return _retriever
+
     logger.info("Creating retriever...")
     multi_query_retriever = MultiQueryRetriever.from_llm(
         retriever=vector_store.as_retriever(), llm=llm
@@ -87,6 +107,9 @@ def get_retriever(vector_store: VectorStore, llm: BaseLLM) -> BaseRetriever:
         base_compressor=pipeline_compressor,
         base_retriever=multi_query_retriever,
     )
+
+    _retriever = compression_retriever
+
     return compression_retriever
 
 
