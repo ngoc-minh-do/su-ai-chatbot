@@ -18,7 +18,7 @@ _answer_chain: RunnableSerializable = None
 
 
 def extract_question_only(output: str) -> str:
-    output = re.sub(r"(回答|応答|答え).*$", "", output, flags=re.DOTALL)
+    output = re.sub(r"(回答|応答|答え|Answer).*$", "", output, flags=re.DOTALL)
     return output.replace("###", "").strip()
 
 
