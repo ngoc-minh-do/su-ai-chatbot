@@ -4,7 +4,6 @@ import gradio as gr
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import PromptTemplate
 from langchain_core.runnables import (
-    RunnableParallel,
     RunnablePassthrough,
     RunnableSerializable,
 )
@@ -115,16 +114,19 @@ def generate_qa():
 
     answer_chain = create_answer_chain()
 
-    map_chain = RunnableParallel(answer1=answer_chain, answer2=answer_chain)
+    answer1 = answer_chain.invoke({"context": context, "question": question})
 
-    answer = map_chain.invoke({"context": context, "question": question})
+    yield (
+        gr.update(),
+        gr.update(value=answer1),
+        gr.update(),
+    )
 
-    answer1 = answer["answer1"]
-    answer2 = answer["answer2"]
+    answer2 = answer_chain.invoke({"context": context, "question": question})
 
     yield (
         gr.update(interactive=True),
-        gr.update(value=answer1, interactive=True),
+        gr.update(interactive=True),
         gr.update(value=answer2, interactive=True),
     )
 

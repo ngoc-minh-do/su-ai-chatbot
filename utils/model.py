@@ -59,7 +59,7 @@ def _load_huggingface_llm() -> BaseLLM:
         model_id=constants.model_id,
         task="text-generation",
         pipeline_kwargs=dict(
-            max_new_tokens=100,
+            max_new_tokens=constants.max_tokens,
             do_sample=True,
             top_p=0.95,
             temperature=0.7,
@@ -87,6 +87,7 @@ def _load_gguf_llm() -> BaseLLM:
         n_gpu_layers=n_gpu_layers,
         n_batch=n_batch,
         n_ctx=8192,
+        max_tokens=constants.max_tokens,
     )
 
     return llm
