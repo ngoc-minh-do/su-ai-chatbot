@@ -1,3 +1,5 @@
+import logging as loggingLib
+
 from sqlalchemy import create_engine, text
 
 from utils import constants, logging
@@ -5,7 +7,7 @@ from utils import constants, logging
 logger = logging.get_logger(__name__)
 
 
-def main():
+def init_database():
     logger.info("Initializing database...")
 
     base_url = "/".join(constants.db_connection_string.split("/")[:-1]) + "/postgres"
@@ -21,12 +23,9 @@ def main():
             logger.info(f"Database '{dbname}' does not exist, creating it...")
             conn.execute(text(f"CREATE DATABASE {dbname}"))
 
-    engine = create_engine(constants.db_connection_string, isolation_level="AUTOCOMMIT")
-    with engine.connect() as conn, open("schema.sql", "r") as schema_file:
-        sql = text(schema_file.read())
-        conn.execute(sql)
-        logger.info("Database initialized and table created.")
 
+init_database()
 
-if __name__ == "__main__":
-    main()
+engine = create_engine(
+    constants.db_connection_string, echo=logger.level == loggingLib.DEBUG
+)

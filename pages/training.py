@@ -9,6 +9,7 @@ from langchain_core.runnables import (
     RunnableSerializable,
 )
 
+from db.operations import create_training_qa_data
 from utils import logging, model
 
 logger = logging.get_logger(__name__)
@@ -106,7 +107,7 @@ def generate_qa():
 
     question = question_chain.invoke(context)
 
-    yield question, None, None
+    yield gr.update(value=question, interactive=False), gr.update(value="", interactive=False), gr.update(value="", interactive=False)
 
     answer_chain = create_answer_chain()
 
@@ -117,12 +118,29 @@ def generate_qa():
     answer1 = answer["answer1"]
     answer2 = answer["answer2"]
 
-    yield question, answer1, answer2
+    yield gr.update(interactive=True), gr.update(value=answer1, interactive=True), gr.update(value=answer2, interactive=True)
 
 
-def submit(question, answer):
-    print(f"Submitted Question: {question}")
-    print(f"Submitted Answer: {answer}")
+def submit1(question, answer1, answer2):
+    return submit(question, answer1, answer2, 1)
+
+
+def submit2(question, answer1, answer2):
+    return submit(question, answer1, answer2, 2)
+
+
+def submit(question: str, answer1: str, answer2: str, selected_answer: int):
+    logger.info(
+        f"Submitting question: {question}, answer1: {answer1}, answer2: {answer2}, selected_answer: {selected_answer}"
+    )
+
+    if question.strip() and answer1.strip():
+        create_training_qa_data(question, answer1, 1 if selected_answer == 1 else 0)
+
+    if question.strip() and answer2.strip():
+        create_training_qa_data(question, answer2, 1 if selected_answer == 2 else 0)
+
+    return gr.update(value=""), gr.update(value=""), gr.update(value="")
 
 
 def render():
@@ -165,7 +183,15 @@ def render():
         generateQA.click(
             fn=generate_qa, inputs=[], outputs=[question, answer1, answer2]
         )
-        accept1.click(fn=submit, inputs=[question, answer1], outputs=[])
-        accept2.click(fn=submit, inputs=[question, answer2], outputs=[])
+        accept1.click(
+            fn=submit1,
+            inputs=[question, answer1, answer2],
+            outputs=[question, answer1, answer2],
+        )
+        accept2.click(
+            fn=submit2,
+            inputs=[question, answer1, answer2],
+            outputs=[question, answer1, answer2],
+        )
 
     return demo

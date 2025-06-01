@@ -2,7 +2,7 @@ import logging
 import os
 from typing import Optional
 
-_log_level = os.environ.get("LOGLEVEL", "WARNING").upper()
+_log_level = os.environ.get("LOGLEVEL", logging.WARNING).upper()
 _default_handler: Optional[logging.Handler] = None
 
 
