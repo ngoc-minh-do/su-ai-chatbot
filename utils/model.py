@@ -10,12 +10,14 @@ from langchain.retrievers.document_compressors import (
 )
 from langchain.retrievers.multi_query import MultiQueryRetriever
 from langchain_community.document_transformers import EmbeddingsRedundantFilter
+from langchain_core.documents import Document
 from langchain_core.language_models.llms import BaseLLM
 from langchain_core.retrievers import BaseRetriever
 from langchain_core.vectorstores import VectorStore
 from langchain_huggingface import HuggingFaceEmbeddings, HuggingFacePipeline
 from langchain_qdrant import QdrantVectorStore
 from langchain_text_splitters import CharacterTextSplitter
+from qdrant_client import models
 from transformers import BitsAndBytesConfig
 
 logger = logging.get_logger(__name__)
@@ -59,7 +61,7 @@ def get_llm() -> BaseLLM:
     return llm
 
 
-def get_vector_store() -> VectorStore:
+def get_vector_store() -> QdrantVectorStore:
     global _vector_store
     if _vector_store is not None:
         logger.info("Vector store already loaded, returning existing instance.")
@@ -81,6 +83,29 @@ def get_vector_store() -> VectorStore:
     _vector_store = vector_store
 
     return vector_store
+
+
+def get_random_docs() -> list[Document]:
+    logger.info("Retrieving random documents from vector store...")
+    vector_store = get_vector_store()
+
+    response = vector_store.client.query_points(
+        collection_name=vector_store.collection_name,
+        query=models.SampleQuery(sample=models.Sample.RANDOM),
+        limit=5,
+    )
+
+    documents = [
+        vector_store._document_from_point(
+            result,
+            vector_store.collection_name,
+            vector_store.content_payload_key,
+            vector_store.metadata_payload_key,
+        )
+        for result in response.points
+    ]
+
+    return documents
 
 
 def get_retriever(vector_store: VectorStore, llm: BaseLLM) -> BaseRetriever:
@@ -114,13 +139,13 @@ def get_retriever(vector_store: VectorStore, llm: BaseLLM) -> BaseRetriever:
     return compression_retriever
 
 
-def format_docs(docs):
+def format_docs(docs: list[Document]) -> str:
     pretty_print_docs(docs)
 
     return "\n\n".join(doc.page_content for doc in docs)
 
 
-def pretty_print_docs(docs):
+def pretty_print_docs(docs: list[Document]) -> None:
     logger.debug(f"Number of documents retrieved: {len(docs)}")
     for i, d in enumerate(docs):
         logger.debug(

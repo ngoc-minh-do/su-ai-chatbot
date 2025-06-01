@@ -99,15 +99,19 @@ def create_answer_chain() -> RunnableSerializable:
 def generate_qa():
     logger.info("Generating question and answers...")
 
-    vector_store = model.get_vector_store()
-    sample_docs = vector_store.similarity_search("", k=5)
+    sample_docs = model.get_random_docs()
+
     context = model.format_docs(sample_docs)
 
     question_chain = create_question_chain()
 
     question = question_chain.invoke(context)
 
-    yield gr.update(value=question, interactive=False), gr.update(value="", interactive=False), gr.update(value="", interactive=False)
+    yield (
+        gr.update(value=question, interactive=False),
+        gr.update(value="", interactive=False),
+        gr.update(value="", interactive=False),
+    )
 
     answer_chain = create_answer_chain()
 
@@ -118,7 +122,11 @@ def generate_qa():
     answer1 = answer["answer1"]
     answer2 = answer["answer2"]
 
-    yield gr.update(interactive=True), gr.update(value=answer1, interactive=True), gr.update(value=answer2, interactive=True)
+    yield (
+        gr.update(interactive=True),
+        gr.update(value=answer1, interactive=True),
+        gr.update(value=answer2, interactive=True),
+    )
 
 
 def submit1(question, answer1, answer2):
