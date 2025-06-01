@@ -37,10 +37,10 @@ def get_llm() -> BaseLLM:
 
     logger.info("Loading llm...")
 
-    if "GGUF" in constants.model_id.lower():
-        llm = _load_huggingface_llm()
-    else:
+    if "GGUF" in constants.model_id.upper():
         llm = _load_gguf_llm()
+    else:
+        llm = _load_huggingface_llm()
 
     _llm = llm
 
