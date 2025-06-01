@@ -28,6 +28,8 @@ lxml = "^5.4.0"
 grandalf = "^0.8"
 sqlalchemy = "^2.0.41"
 psycopg2-binary = "^2.9.10"
+huggingface-hub = "^0.32.3"
+llama-cpp-python = {path = "local_packages/llama_cpp_python-0.3.4-cp312-cp312-linux_x86_64.whl"}
 
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]

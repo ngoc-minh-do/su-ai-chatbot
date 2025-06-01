@@ -3,6 +3,7 @@ from utils import constants, env, logging
 env.load_env()
 
 
+from huggingface_hub import hf_hub_download
 from langchain.retrievers import ContextualCompressionRetriever
 from langchain.retrievers.document_compressors import (
     DocumentCompressorPipeline,
@@ -10,6 +11,7 @@ from langchain.retrievers.document_compressors import (
 )
 from langchain.retrievers.multi_query import MultiQueryRetriever
 from langchain_community.document_transformers import EmbeddingsRedundantFilter
+from langchain_community.llms.llamacpp import LlamaCpp
 from langchain_core.documents import Document
 from langchain_core.language_models.llms import BaseLLM
 from langchain_core.retrievers import BaseRetriever
@@ -34,6 +36,18 @@ def get_llm() -> BaseLLM:
         return _llm
 
     logger.info("Loading llm...")
+
+    if "GGUF" in constants.model_id.lower():
+        llm = _load_huggingface_llm()
+    else:
+        llm = _load_gguf_llm()
+
+    _llm = llm
+
+    return llm
+
+
+def _load_huggingface_llm() -> BaseLLM:
     quantization_config = BitsAndBytesConfig(
         load_in_4bit=True,
         bnb_4bit_quant_type="nf4",
@@ -56,7 +70,24 @@ def get_llm() -> BaseLLM:
         model_kwargs={"quantization_config": quantization_config},
     )
 
-    _llm = llm
+    return llm
+
+
+def _load_gguf_llm() -> BaseLLM:
+    model_path = hf_hub_download(
+        repo_id=constants.model_id, filename=constants.gguf_model_file
+    )
+
+    logger.info(f"Loading GGUF model from {model_path}")
+    n_gpu_layers = -1
+    n_batch = 512
+
+    llm = LlamaCpp(
+        model_path=model_path,
+        n_gpu_layers=n_gpu_layers,
+        n_batch=n_batch,
+        n_ctx=8192,
+    )
 
     return llm
 
@@ -92,7 +123,7 @@ def get_random_docs() -> list[Document]:
     response = vector_store.client.query_points(
         collection_name=vector_store.collection_name,
         query=models.SampleQuery(sample=models.Sample.RANDOM),
-        limit=5,
+        limit=constants.number_of_retrieve_documents,
     )
 
     documents = [
@@ -124,6 +155,7 @@ def get_retriever(vector_store: VectorStore, llm: BaseLLM) -> BaseRetriever:
     relevant_filter = EmbeddingsFilter(
         embeddings=vector_store.embeddings,
         similarity_threshold=0.5,
+        k=constants.number_of_retrieve_documents,
     )
     pipeline_compressor = DocumentCompressorPipeline(
         transformers=[splitter, redundant_filter, relevant_filter]
