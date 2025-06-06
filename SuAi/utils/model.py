@@ -18,6 +18,7 @@ from qdrant_client import models
 from transformers import BitsAndBytesConfig
 
 from ..utils import constants, logging, settings
+from ..utils.settings import SelectedModel
 
 logger = logging.get_logger(__name__)
 
@@ -27,22 +28,27 @@ _retriever: ContextualCompressionRetriever = None
 
 
 def get_llm() -> BaseLLM:
-    print(settings.selected_model)
     global _llm
-    if _llm is not None:
-        logger.info("LLM already loaded, returning existing instance.")
-        return _llm
+    model_name = settings.selected_model.name
 
-    logger.info("Loading llm...")
+    if _llm.get(model_name) is not None:
+        logger.info(f"LLM {model_name} already loaded, returning existing instance.")
+        return _llm.get(model_name)
 
-    if "GGUF" in constants.model_id.upper():
-        llm = _load_gguf_llm()
+    logger.info(f"Loading LLM {model_name}...")
+
+    if settings.selected_model == SelectedModel.ollama:
+        _llm[model_name] = _load_huggingface_llm()
+    elif settings.selected_model == SelectedModel.gguf:
+        _llm[model_name] = _load_gguf_llm()
+    elif settings.selected_model == SelectedModel.huggingface:
+        _llm[model_name] = _load_huggingface_llm()
+    elif settings.selected_model == SelectedModel.litellm:
+        _llm[model_name] = _load_huggingface_llm()
     else:
-        llm = _load_huggingface_llm()
+        pass
 
-    _llm = llm
-
-    return llm
+    return _llm.get(model_name)
 
 
 def _load_huggingface_llm() -> BaseLLM:
@@ -54,7 +60,7 @@ def _load_huggingface_llm() -> BaseLLM:
     )
 
     llm = HuggingFacePipeline.from_model_id(
-        model_id=constants.model_id,
+        model_id=constants.huggingface_model_id,
         task="text-generation",
         pipeline_kwargs=dict(
             max_new_tokens=constants.max_tokens,
@@ -73,7 +79,7 @@ def _load_huggingface_llm() -> BaseLLM:
 
 def _load_gguf_llm() -> BaseLLM:
     model_path = hf_hub_download(
-        repo_id=constants.model_id, filename=constants.gguf_model_file
+        repo_id=constants.gguf_model_id, filename=constants.gguf_model_file
     )
 
     logger.info(f"Loading GGUF model from {model_path}")
@@ -122,7 +128,7 @@ def get_random_docs() -> list[Document]:
     response = vector_store.client.query_points(
         collection_name=vector_store.collection_name,
         query=models.SampleQuery(sample=models.Sample.RANDOM),
-        limit=constants.number_of_retrieve_documents,
+        limit=1,
     )
 
     documents = [
@@ -154,7 +160,7 @@ def get_retriever(vector_store: VectorStore, llm: BaseLLM) -> BaseRetriever:
     relevant_filter = EmbeddingsFilter(
         embeddings=vector_store.embeddings,
         similarity_threshold=0.5,
-        k=constants.number_of_retrieve_documents,
+        k=3,
     )
     pipeline_compressor = DocumentCompressorPipeline(
         transformers=[splitter, redundant_filter, relevant_filter]

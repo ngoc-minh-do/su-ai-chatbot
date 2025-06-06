@@ -13,21 +13,12 @@ from ..utils import logging, model
 
 logger = logging.get_logger(__name__)
 
-_question_chain: RunnableSerializable = None
-_answer_chain: RunnableSerializable = None
-
-
 def extract_question_only(output: str) -> str:
     output = re.sub(r"(回答|応答|答え|Answer).*$", "", output, flags=re.DOTALL)
     return output.replace("###", "").strip()
 
 
 def create_question_chain() -> RunnableSerializable:
-    global _question_chain
-    if _question_chain is not None:
-        logger.info("Question chain already created, returning existing instance.")
-        return _question_chain
-
     logger.info("Creating question chain...")
 
     llm = model.get_llm()
@@ -55,17 +46,10 @@ def create_question_chain() -> RunnableSerializable:
 
     logger.debug("\n" + question_chain.get_graph().draw_ascii())
 
-    _question_chain = question_chain
-
     return question_chain
 
 
 def create_answer_chain() -> RunnableSerializable:
-    global _answer_chain
-    if _answer_chain is not None:
-        logger.info("Answer chain already created, returning existing instance.")
-        return _answer_chain
-
     logger.info("Creating answer chain...")
 
     llm = model.get_llm()
@@ -89,8 +73,6 @@ def create_answer_chain() -> RunnableSerializable:
     answer_chain = prompt | llm | StrOutputParser()
 
     logger.debug("\n" + answer_chain.get_graph().draw_ascii())
-
-    _answer_chain = answer_chain
 
     return answer_chain
 

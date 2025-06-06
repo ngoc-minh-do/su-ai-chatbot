@@ -8,15 +8,8 @@ from ..utils import logging, model, settings
 
 logger = logging.get_logger(__name__)
 
-_rag_chain: RunnableSerializable = None
-
 
 def create_rag_chain():
-    global _rag_chain
-    if _rag_chain is not None:
-        logger.info("RAG chain already created, returning existing instance.")
-        return _rag_chain
-
     logger.info("Creating rag chain...")
 
     llm = model.get_llm()
@@ -56,12 +49,12 @@ def create_rag_chain():
 
     logger.debug("\n" + rag_chain.get_graph().draw_ascii())
 
-    _rag_chain = rag_chain
-
     return rag_chain
 
 
-def response_fn(message, history):
+def response_fn(message, history, selected_model):
+    settings.selected_model = settings.SelectedModel(selected_model)
+
     rag_chain = create_rag_chain()
 
     logger.info(f"Generating response for message: {message}")
@@ -73,12 +66,14 @@ def response_fn(message, history):
 
 
 def model_change(value):
-    settings.selected_model = value
+    settings.selected_model = settings.SelectedModel(value)
+
 
 css = """
 footer{display:none !important}
 #component-15 { height: 80vh !important; }
 """
+
 
 def main():
     logger.info("Starting the app...")
@@ -90,8 +85,8 @@ def main():
         demo.description = "シェアフルシフトのAIアシスタントです。シフトの作成・管理について質問してください。"
 
         model_selector = gr.Dropdown(
-            choices=[m.value for m in settings.Model],
-            value=settings.selected_model,
+            choices=[m.value for m in settings.SelectedModel],
+            value=settings.selected_model.value,
             label="Model:",
         )
         model_selector.change(model_change, [model_selector])
@@ -100,6 +95,7 @@ def main():
             response_fn,
             type="messages",
             save_history=True,
+            additional_inputs=[model_selector],
         )
 
     with demo.route(name="トレーニング", path="/training"):
