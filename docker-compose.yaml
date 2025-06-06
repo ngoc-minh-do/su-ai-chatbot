@@ -13,6 +13,8 @@ services:
     ports:
       - 7860:7860
     restart: unless-stopped
+    labels:
+      - sablier.enable=true
     deploy:
       resources:
         reservations:
