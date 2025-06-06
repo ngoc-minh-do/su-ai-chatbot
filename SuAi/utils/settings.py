@@ -1,0 +1,10 @@
+from enum import Enum
+
+
+class Model(Enum):
+    litellm = "Model 1"
+    ollama = "Model 2"
+    huggingface = "Model 3"
+    gguf = "Model 4"
+
+selected_model = Model.litellm.value

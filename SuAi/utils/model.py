@@ -17,7 +17,7 @@ from langchain_text_splitters import CharacterTextSplitter
 from qdrant_client import models
 from transformers import BitsAndBytesConfig
 
-from ..utils import constants, logging
+from ..utils import constants, logging, settings
 
 logger = logging.get_logger(__name__)
 
@@ -27,6 +27,7 @@ _retriever: ContextualCompressionRetriever = None
 
 
 def get_llm() -> BaseLLM:
+    print(settings.selected_model)
     global _llm
     if _llm is not None:
         logger.info("LLM already loaded, returning existing instance.")

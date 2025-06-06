@@ -4,7 +4,7 @@ from langchain_core.prompts import PromptTemplate
 from langchain_core.runnables import RunnablePassthrough, RunnableSerializable
 
 from ..pages import training
-from ..utils import logging, model
+from ..utils import logging, model, settings
 
 logger = logging.get_logger(__name__)
 
@@ -72,17 +72,37 @@ def response_fn(message, history):
         yield "".join(chunks)
 
 
+def model_change(value):
+    settings.selected_model = value
+
+css = """
+footer{display:none !important}
+#component-15 { height: 80vh !important; }
+"""
+
 def main():
     logger.info("Starting the app...")
-    with gr.ChatInterface(
-        response_fn,
-        type="messages",
-        save_history=True,
-        css="footer{display:none !important}",
+
+    with gr.Blocks(
+        css=css,
     ) as demo:
         demo.title = "Shareful Shift AI Assistant"
         demo.description = "シェアフルシフトのAIアシスタントです。シフトの作成・管理について質問してください。"
 
+        model_selector = gr.Dropdown(
+            choices=[m.value for m in settings.Model],
+            value=settings.selected_model,
+            label="Model:",
+        )
+        model_selector.change(model_change, [model_selector])
+
+        gr.ChatInterface(
+            response_fn,
+            type="messages",
+            save_history=True,
+        )
+
     with demo.route(name="トレーニング", path="/training"):
         training.render()
+
     demo.launch(server_name="0.0.0.0", server_port=7860)
