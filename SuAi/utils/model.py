@@ -1,3 +1,5 @@
+import os
+
 from huggingface_hub import hf_hub_download
 from langchain.retrievers import ContextualCompressionRetriever
 from langchain.retrievers.document_compressors import (
@@ -12,6 +14,8 @@ from langchain_core.language_models.llms import BaseLLM
 from langchain_core.retrievers import BaseRetriever
 from langchain_core.vectorstores import VectorStore
 from langchain_huggingface import HuggingFaceEmbeddings, HuggingFacePipeline
+from langchain_litellm import ChatLiteLLM
+from langchain_ollama import ChatOllama
 from langchain_qdrant import QdrantVectorStore
 from langchain_text_splitters import CharacterTextSplitter
 from qdrant_client import models
@@ -22,7 +26,7 @@ from ..utils.settings import SelectedModel
 
 logger = logging.get_logger(__name__)
 
-_llm: BaseLLM = None
+_llm: BaseLLM = {}
 _vector_store: VectorStore = None
 _retriever: ContextualCompressionRetriever = None
 
@@ -38,17 +42,41 @@ def get_llm() -> BaseLLM:
     logger.info(f"Loading LLM {model_name}...")
 
     if settings.selected_model == SelectedModel.ollama:
-        _llm[model_name] = _load_huggingface_llm()
+        _llm[model_name] = _load_ollama_llm()
     elif settings.selected_model == SelectedModel.gguf:
         _llm[model_name] = _load_gguf_llm()
     elif settings.selected_model == SelectedModel.huggingface:
         _llm[model_name] = _load_huggingface_llm()
     elif settings.selected_model == SelectedModel.litellm:
-        _llm[model_name] = _load_huggingface_llm()
+        _llm[model_name] = _load_litellm_llm()
     else:
         pass
 
     return _llm.get(model_name)
+
+
+def _load_ollama_llm() -> BaseLLM:
+    llm = ChatOllama(
+        base_url=os.environ.get("OLLAMA_URL"),
+        model="deepseek-r1:8b",
+        temperature=constants.temperature,
+        num_predict=constants.max_tokens,
+        num_gpu=10000,
+    )
+
+    return llm
+
+
+def _load_litellm_llm() -> BaseLLM:
+    llm = ChatLiteLLM(
+        api_base=os.environ.get("LITELLM_API_URL"),
+        api_key=os.environ.get("LITELLM_API_KEY"),
+        model="mistral/devstral-small-2505",
+        temperature=constants.temperature,
+        max_tokens=constants.max_tokens,
+    )
+
+    return llm
 
 
 def _load_huggingface_llm() -> BaseLLM:
@@ -66,7 +94,7 @@ def _load_huggingface_llm() -> BaseLLM:
             max_new_tokens=constants.max_tokens,
             do_sample=True,
             top_p=0.95,
-            temperature=0.7,
+            temperature=constants.temperature,
             repetition_penalty=1.05,
             return_full_text=False,
         ),
@@ -92,6 +120,7 @@ def _load_gguf_llm() -> BaseLLM:
         n_batch=n_batch,
         n_ctx=8192,
         max_tokens=constants.max_tokens,
+        temperature=constants.temperature,
     )
 
     return llm

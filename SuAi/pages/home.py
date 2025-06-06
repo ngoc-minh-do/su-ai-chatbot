@@ -4,7 +4,7 @@ from langchain_core.prompts import PromptTemplate
 from langchain_core.runnables import RunnablePassthrough, RunnableSerializable
 
 from ..pages import training
-from ..utils import logging, model, settings
+from ..utils import constants, logging, model, settings
 
 logger = logging.get_logger(__name__)
 
@@ -59,10 +59,13 @@ def response_fn(message, history, selected_model):
 
     logger.info(f"Generating response for message: {message}")
 
-    chunks = []
-    for chunk in rag_chain.stream(message):
-        chunks.append(chunk)
-        yield "".join(chunks)
+    if constants.stream:
+        chunks = []
+        for chunk in rag_chain.stream(message):
+            chunks.append(chunk)
+            yield "".join(chunks)
+    else:
+        return rag_chain.invoke(message)
 
 
 def model_change(value):

@@ -16,4 +16,6 @@ db_connection_string = (
     "postgresql://postgres:REDACTED@localhost:5432/su_ai_chatbot"
 )
 
-max_tokens = 512
+max_tokens = 1024
+temperature = 0.8
+stream = False
