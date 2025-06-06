@@ -1,6 +1,4 @@
-from utils import constants, env, logging
-
-env.load_env()
+from SuAi.utils import constants, logging
 
 import re
 

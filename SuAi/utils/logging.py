@@ -5,7 +5,6 @@ from typing import Optional
 _log_level = os.environ.get("LOGLEVEL", logging.WARNING).upper()
 _default_handler: Optional[logging.Handler] = None
 
-
 def get_logger(name: str) -> logging.Logger:
     global _default_handler
 

@@ -1,8 +1,3 @@
-from utils import constants, env, logging
-
-env.load_env()
-
-
 from huggingface_hub import hf_hub_download
 from langchain.retrievers import ContextualCompressionRetriever
 from langchain.retrievers.document_compressors import (
@@ -21,6 +16,8 @@ from langchain_qdrant import QdrantVectorStore
 from langchain_text_splitters import CharacterTextSplitter
 from qdrant_client import models
 from transformers import BitsAndBytesConfig
+
+from ..utils import constants, logging
 
 logger = logging.get_logger(__name__)
 

@@ -1,14 +1,10 @@
-from utils import env, logging
-
-env.load_env()
-
 import gradio as gr
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import PromptTemplate
 from langchain_core.runnables import RunnablePassthrough, RunnableSerializable
 
-from pages import training
-from utils import model
+from ..pages import training
+from ..utils import logging, model
 
 logger = logging.get_logger(__name__)
 
@@ -90,7 +86,3 @@ def main():
     with demo.route(name="トレーニング", path="/training"):
         training.render()
     demo.launch(server_name="0.0.0.0", server_port=7860)
-
-
-if __name__ == "__main__":
-    main()

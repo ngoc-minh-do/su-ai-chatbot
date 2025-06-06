@@ -1,6 +1,6 @@
-from db.engine import engine
-from db.models import Base
-from utils import logging
+from ..db.engine import engine
+from ..db.models import Base
+from ..utils import logging
 
 logger = logging.get_logger(__name__)
 

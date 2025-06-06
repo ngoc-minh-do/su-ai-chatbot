@@ -1,9 +1,9 @@
 from sqlalchemy.orm import Session
 
-from db.engine import engine
-from db.models import TrainingQaData
-from db.utils import create_database
-from utils import logging
+from ..db.engine import engine
+from ..db.models import TrainingQaData
+from ..db.utils import create_database
+from ..utils import logging
 
 logger = logging.get_logger(__name__)
 

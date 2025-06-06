@@ -2,7 +2,7 @@ import logging as loggingLib
 
 from sqlalchemy import create_engine, text
 
-from utils import constants, logging
+from ..utils import constants, logging
 
 logger = logging.get_logger(__name__)
 
@@ -23,8 +23,6 @@ def init_database():
             logger.info(f"Database '{dbname}' does not exist, creating it...")
             conn.execute(text(f"CREATE DATABASE {dbname}"))
 
-
-init_database()
 
 engine = create_engine(
     constants.db_connection_string, echo=logger.level == loggingLib.DEBUG

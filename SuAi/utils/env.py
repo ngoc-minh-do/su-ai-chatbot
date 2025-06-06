@@ -5,6 +5,7 @@ from dotenv import load_dotenv
 
 
 def load_env():
+    print("Loading env")
     load_dotenv(".env.prod" if os.environ.get("prod") else ".env")
     pathlib.Path(os.environ.get("TRANSFORMERS_CACHE")).mkdir(
         parents=True, exist_ok=True

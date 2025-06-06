@@ -8,8 +8,8 @@ from langchain_core.runnables import (
     RunnableSerializable,
 )
 
-from db.operations import create_training_qa_data
-from utils import logging, model
+from ..db.operations import create_training_qa_data
+from ..utils import logging, model
 
 logger = logging.get_logger(__name__)
 
