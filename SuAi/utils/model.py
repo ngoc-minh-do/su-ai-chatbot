@@ -120,7 +120,7 @@ def _load_gguf_llm() -> BaseLLM:
         n_batch=n_batch,
         n_ctx=8192,
         max_tokens=constants.max_tokens,
-        # temperature=constants.temperature,
+        temperature=constants.temperature,
     )
 
     return llm
