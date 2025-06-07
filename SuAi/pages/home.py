@@ -9,7 +9,7 @@ from ..utils import constants, logging, model, settings
 logger = logging.get_logger(__name__)
 
 
-def create_rag_chain():
+def create_rag_chain() -> RunnableSerializable:
     logger.info("Creating rag chain...")
 
     llm = model.get_llm()
@@ -61,9 +61,19 @@ def response_fn(message, history, selected_model):
 
     if constants.stream:
         chunks = []
-        for chunk in rag_chain.stream(message):
-            chunks.append(chunk)
-            yield "".join(chunks)
+        stream = rag_chain.stream(message)
+
+        while True:
+            try:
+                chunk = next(stream)
+                if len(chunk) > 0:
+                    chunks.append(chunk)
+                    yield "".join(chunks)
+                else:
+                    yield "Thinking..."
+            except StopIteration:
+                yield "".join(chunks)
+                break
     else:
         yield rag_chain.invoke(message)
 
