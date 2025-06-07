@@ -62,6 +62,7 @@ def _load_ollama_llm() -> BaseLLM:
         temperature=constants.temperature,
         num_predict=constants.max_tokens,
         num_gpu=10000,
+        extract_reasoning=True,
     )
 
     return llm
