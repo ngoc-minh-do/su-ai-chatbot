@@ -31,7 +31,7 @@ psycopg2-binary = "^2.9.10"
 huggingface-hub = "^0.32.3"
 llama-cpp-python = {path = "local_packages/llama_cpp_python-0.3.4-cp312-cp312-linux_x86_64.whl"}
 langchain-ollama = "^0.3.3"
-langchain-litellm = "^0.2.1"
+langchain-openai = "^0.3.21"
 
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]

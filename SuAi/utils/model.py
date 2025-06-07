@@ -14,8 +14,8 @@ from langchain_core.language_models.llms import BaseLLM
 from langchain_core.retrievers import BaseRetriever
 from langchain_core.vectorstores import VectorStore
 from langchain_huggingface import HuggingFaceEmbeddings, HuggingFacePipeline
-from langchain_litellm import ChatLiteLLM
 from langchain_ollama import ChatOllama
+from langchain_openai import ChatOpenAI
 from langchain_qdrant import QdrantVectorStore
 from langchain_text_splitters import CharacterTextSplitter
 from qdrant_client import models
@@ -68,8 +68,8 @@ def _load_ollama_llm() -> BaseLLM:
 
 
 def _load_litellm_llm() -> BaseLLM:
-    llm = ChatLiteLLM(
-        api_base=os.environ.get("LITELLM_API_URL"),
+    llm = ChatOpenAI(
+        base_url=os.environ.get("LITELLM_API_URL"),
         api_key=os.environ.get("LITELLM_API_KEY"),
         model="mistral/devstral-small-2505",
         temperature=constants.temperature,
