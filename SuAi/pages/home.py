@@ -65,7 +65,7 @@ def response_fn(message, history, selected_model):
             chunks.append(chunk)
             yield "".join(chunks)
     else:
-        return rag_chain.invoke(message)
+        yield rag_chain.invoke(message)
 
 
 def model_change(value):
