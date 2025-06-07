@@ -19,3 +19,5 @@ db_connection_string = (
 max_tokens = 1024
 temperature = 0.8
 stream = False
+
+query_enhancement = False

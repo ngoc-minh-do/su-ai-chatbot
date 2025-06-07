@@ -120,7 +120,7 @@ def _load_gguf_llm() -> BaseLLM:
         n_batch=n_batch,
         n_ctx=8192,
         max_tokens=constants.max_tokens,
-        temperature=constants.temperature,
+        # temperature=constants.temperature,
     )
 
     return llm
@@ -180,9 +180,12 @@ def get_retriever(vector_store: VectorStore, llm: BaseLLM) -> BaseRetriever:
         return _retriever
 
     logger.info("Creating retriever...")
-    multi_query_retriever = MultiQueryRetriever.from_llm(
-        retriever=vector_store.as_retriever(), llm=llm
+    base_retriever = (
+        MultiQueryRetriever.from_llm(retriever=vector_store.as_retriever(), llm=llm)
+        if constants.query_enhancement
+        else vector_store.as_retriever()
     )
+    logger.info(f"Using {base_retriever.__class__.__name__} as base retriever")
 
     splitter = CharacterTextSplitter(chunk_size=300, chunk_overlap=0, separator=". ")
     redundant_filter = EmbeddingsRedundantFilter(embeddings=vector_store.embeddings)
@@ -197,7 +200,7 @@ def get_retriever(vector_store: VectorStore, llm: BaseLLM) -> BaseRetriever:
 
     compression_retriever = ContextualCompressionRetriever(
         base_compressor=pipeline_compressor,
-        base_retriever=multi_query_retriever,
+        base_retriever=base_retriever,
     )
 
     _retriever = compression_retriever
