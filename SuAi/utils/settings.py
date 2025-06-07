@@ -5,9 +5,9 @@ from ..utils import constants
 
 class SelectedModel(Enum):
     litellm = "Model 1"
-    ollama = "Model 2"
-    huggingface = "Model 3"
-    gguf = "Model 4"
+    ollama = "Model 2 (Local)"
+    huggingface = "Model 3 (Local)"
+    gguf = "Model 4 (Local)"
 
 selected_model = SelectedModel.litellm
 model_choices = (
