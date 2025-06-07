@@ -9,7 +9,7 @@ from langchain_core.runnables import (
 )
 
 from ..db.operations import create_training_qa_data
-from ..utils import logging, model
+from ..utils import logging, model, settings
 
 logger = logging.get_logger(__name__)
 
@@ -77,8 +77,9 @@ def create_answer_chain() -> RunnableSerializable:
     return answer_chain
 
 
-def generate_qa():
+def generate_qa(selected_model):
     logger.info("Generating question and answers...")
+    settings.selected_model = settings.SelectedModel(selected_model)
 
     sample_docs = model.get_random_docs()
 
@@ -135,8 +136,21 @@ def submit(question: str, answer1: str, answer2: str, selected_answer: int):
     return gr.update(value=""), gr.update(value=""), gr.update(value="")
 
 
+def model_change(value):
+    settings.selected_model = settings.SelectedModel(value)
+    return gr.update(value=settings.selected_model.value)
+
+
 def render():
     with gr.Blocks() as demo:
+        with gr.Row():
+            model_selector = gr.Dropdown(
+                choices=[m.value for m in settings.SelectedModel],
+                value=settings.selected_model.value,
+                label="Model:",
+            )
+            model_selector.change(model_change, [model_selector], [model_selector])
+
         with gr.Row():
             generateQA = gr.Button("質問と回答を生成")
 
@@ -173,7 +187,7 @@ def render():
                 accept2 = gr.Button("この回答を選ぶ")
 
         generateQA.click(
-            fn=generate_qa, inputs=[], outputs=[question, answer1, answer2]
+            fn=generate_qa, inputs=[model_selector], outputs=[question, answer1, answer2]
         )
         accept1.click(
             fn=submit1,
