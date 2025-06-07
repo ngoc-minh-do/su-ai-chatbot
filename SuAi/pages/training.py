@@ -4,6 +4,7 @@ import gradio as gr
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import PromptTemplate
 from langchain_core.runnables import (
+    RunnableParallel,
     RunnablePassthrough,
     RunnableSerializable,
 )
@@ -12,6 +13,7 @@ from ..db.operations import create_training_qa_data
 from ..utils import logging, model, settings
 
 logger = logging.get_logger(__name__)
+
 
 def extract_question_only(output: str) -> str:
     output = re.sub(r"(回答|応答|答え|Answer).*$", "", output, flags=re.DOTALL)
@@ -97,19 +99,16 @@ def generate_qa(selected_model):
 
     answer_chain = create_answer_chain()
 
-    answer1 = answer_chain.invoke({"context": context, "question": question})
+    map_chain = RunnableParallel(answer1=answer_chain, answer2=answer_chain)
 
-    yield (
-        gr.update(),
-        gr.update(value=answer1),
-        gr.update(),
-    )
+    answer = map_chain.invoke({"context": context, "question": question})
 
-    answer2 = answer_chain.invoke({"context": context, "question": question})
+    answer1 = answer["answer1"]
+    answer2 = answer["answer2"]
 
     yield (
         gr.update(interactive=True),
-        gr.update(interactive=True),
+        gr.update(value=answer1, interactive=True),
         gr.update(value=answer2, interactive=True),
     )
 
