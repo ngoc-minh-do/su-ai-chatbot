@@ -144,7 +144,7 @@ def render():
     with gr.Blocks() as demo:
         with gr.Row():
             model_selector = gr.Dropdown(
-                choices=[m.value for m in settings.SelectedModel],
+                choices=settings.model_choices,
                 value=settings.selected_model.value,
                 label="Model:",
             )
@@ -186,7 +186,9 @@ def render():
                 accept2 = gr.Button("この回答を選ぶ")
 
         generateQA.click(
-            fn=generate_qa, inputs=[model_selector], outputs=[question, answer1, answer2]
+            fn=generate_qa,
+            inputs=[model_selector],
+            outputs=[question, answer1, answer2],
         )
         accept1.click(
             fn=submit1,

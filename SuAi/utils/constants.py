@@ -1,3 +1,5 @@
+import os
+
 import torch
 
 huggingface_model_id = "llm-jp/llm-jp-3.1-1.8b-instruct4"
@@ -15,6 +17,8 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 db_connection_string = (
     "postgresql://postgres:REDACTED@localhost:5432/su_ai_chatbot"
 )
+
+is_dev = not os.environ.get("prod")
 
 max_tokens = 1024
 temperature = 0.8

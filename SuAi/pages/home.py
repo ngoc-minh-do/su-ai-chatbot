@@ -98,7 +98,7 @@ def main():
         demo.description = "シェアフルシフトのAIアシスタントです。シフトの作成・管理について質問してください。"
 
         model_selector = gr.Dropdown(
-            choices=[m.value for m in settings.SelectedModel],
+            choices=settings.model_choices,
             value=settings.selected_model.value,
             label="Model:",
         )
