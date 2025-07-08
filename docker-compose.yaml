@@ -17,9 +17,6 @@ services:
     restart: unless-stopped
     labels:
       - sablier.enable=true
-      - traefik.enable=true
-      - traefik.http.routers.su-ai-chatbot.rule=Host(`su-ai-chatbot-dev.ngoclab.com`)
-      - traefik.http.services.su-ai-chatbot.loadbalancer.server.port=7860
     deploy:
       resources:
         reservations:
