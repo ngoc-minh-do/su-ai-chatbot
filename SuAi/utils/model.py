@@ -47,8 +47,8 @@ def get_llm() -> BaseLLM:
         _llm[model_name] = _load_gguf_llm()
     elif settings.selected_model == SelectedModel.huggingface:
         _llm[model_name] = _load_huggingface_llm()
-    elif settings.selected_model == SelectedModel.litellm:
-        _llm[model_name] = _load_litellm_llm()
+    elif settings.selected_model == SelectedModel.openai:
+        _llm[model_name] = _load_openai_llm()
     else:
         pass
 
@@ -68,10 +68,10 @@ def _load_ollama_llm() -> BaseLLM:
     return llm
 
 
-def _load_litellm_llm() -> BaseLLM:
+def _load_openai_llm() -> BaseLLM:
     llm = ChatOpenAI(
-        base_url=os.environ.get("LITELLM_API_URL"),
-        api_key=os.environ.get("LITELLM_API_KEY"),
+        base_url=os.environ.get("OPENAI_API_URL"),
+        api_key=os.environ.get("OPENAI_API_KEY"),
         model="mistral/devstral-small-latest",
         temperature=constants.temperature,
         max_tokens=constants.max_tokens,
