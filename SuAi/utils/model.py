@@ -72,7 +72,7 @@ def _load_litellm_llm() -> BaseLLM:
     llm = ChatOpenAI(
         base_url=os.environ.get("LITELLM_API_URL"),
         api_key=os.environ.get("LITELLM_API_KEY"),
-        model="mistral/devstral-small-2505",
+        model="mistral/devstral-small-latest",
         temperature=constants.temperature,
         max_tokens=constants.max_tokens,
     )
