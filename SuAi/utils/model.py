@@ -58,7 +58,7 @@ def get_llm() -> BaseLLM:
 def _load_ollama_llm() -> BaseLLM:
     llm = ChatOllama(
         base_url=os.environ.get("OLLAMA_URL"),
-        model="deepseek-r1:8b",
+        model=os.environ.get("OLLAMA_MODEL"),
         temperature=constants.temperature,
         num_predict=constants.max_tokens,
         num_gpu=10000,
@@ -72,7 +72,7 @@ def _load_openai_llm() -> BaseLLM:
     llm = ChatOpenAI(
         base_url=os.environ.get("OPENAI_API_URL"),
         api_key=os.environ.get("OPENAI_API_KEY"),
-        model="mistral/devstral-small-latest",
+        model=os.environ.get("OPENAI_MODEL"),
         temperature=constants.temperature,
         max_tokens=constants.max_tokens,
     )
