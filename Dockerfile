@@ -1,61 +1,40 @@
-# =========================
-# Build stage
-# =========================
-FROM python:3.13-slim AS builder
-
-# Install build dependencies
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    curl \
-    # For building sentencepiece
-    build-essential \
-    cmake \
-    pkg-config \
-    && rm -rf /var/lib/apt/lists/*
-
-# Install uv
-RUN curl -LsSf https://astral.sh/uv/install.sh | sh
-ENV PATH="/root/.local/bin:${PATH}"
+FROM python:3.13-slim
 
 WORKDIR /app
 
-# Copy dependency files first for better caching
+# Install uv first (no build deps needed)
+RUN apt-get update && apt-get install -y --no-install-recommends curl \
+    && curl -LsSf https://astral.sh/uv/install.sh | sh \
+    && rm -rf /var/lib/apt/lists/* \
+    && rm -rf /root/.cache
+
+ENV PATH="/root/.local/bin:${PATH}"
+
+# Copy dependency files first for caching
 COPY pyproject.toml uv.lock ./
 
-# Install only production dependencies first (no project code yet)
-RUN uv sync --no-install-project && uv cache clean
+# Install build dependencies temporarily for deps compilation
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        build-essential \
+        cmake \
+        pkg-config \
+    && uv sync --no-install-project \
+    && uv cache clean \
+    && rm -rf /root/.cache/pip /tmp/* \
+    # Remove build dependencies
+    && apt-get purge -y build-essential cmake pkg-config \
+    && apt-get autoremove -y \
+    && rm -rf /var/lib/apt/lists/*
 
-# Copy full project and install remaining dependencies
+# Copy full project
 COPY . .
-RUN uv sync && uv cache clean
 
-# Remove any temporary files to reduce size
-RUN rm -rf /root/.cache /tmp/*
-
-# # =========================
-# # Runtime stage
-# # =========================
-# FROM python:3.13-slim AS runtime
-
-# RUN apt-get update && apt-get install -y --no-install-recommends \
-#     curl \
-#     && rm -rf /var/lib/apt/lists/*
-
-# # Install uv
-# RUN curl -LsSf https://astral.sh/uv/install.sh | sh
-# ENV PATH="/root/.local/bin:${PATH}"
-
-# WORKDIR /app
-
-# Copy prebuilt virtualenv from builder
-# COPY --from=builder /app/.venv .venv
-
-# COPY . .
+# Install remaining dependencies (if any) without build deps
+RUN uv sync \
+    && uv cache clean \
+    && rm -rf /root/.cache/pip /tmp/*
 
 ENV prod=true
-
 EXPOSE 7860
-
-# Final cleanup (just in case)
-# RUN rm -rf /root/.cache /tmp/* /var/lib/apt/lists/*
 
 CMD ["uv", "run", "python", "main.py"]
