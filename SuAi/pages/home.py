@@ -1,3 +1,5 @@
+import re
+
 import gradio as gr
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import PromptTemplate
@@ -51,28 +53,37 @@ def create_rag_chain() -> RunnableSerializable:
 
     return rag_chain
 
+think_re = re.compile(r"<think>.*?</think>", re.DOTALL)
 
 def response_fn(message, history, selected_model):
     settings.selected_model = settings.SelectedModel(selected_model)
 
+    yield "Loading the models..."
     rag_chain = create_rag_chain()
 
+    yield "Generating the response..."
     logger.info(f"Generating response for message: {message}")
 
     if constants.stream:
-        chunks = []
+        buffer = ""
+        cleaned_buffer = ""
         stream = rag_chain.stream(message)
 
         while True:
             try:
                 chunk = next(stream)
-                if len(chunk) > 0:
-                    chunks.append(chunk)
-                    yield "".join(chunks)
-                else:
-                    yield "Thinking..."
+
+                if not chunk:
+                    continue
+
+                buffer += chunk
+                cleaned_buffer = think_re.sub("", buffer).strip()
+
+                if "<think>" not in cleaned_buffer:
+                    yield cleaned_buffer
             except StopIteration:
-                yield "".join(chunks)
+                print(f"Thinking: {'\n'.join(think_re.findall(buffer)).strip()}")
+                yield cleaned_buffer
                 break
     else:
         yield rag_chain.invoke(message)
