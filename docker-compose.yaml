@@ -17,6 +17,13 @@ services:
     restart: unless-stopped
     labels:
       - sablier.enable=true
+    healthcheck:
+      test: ["CMD", "curl", "-fsSI", "http://localhost:7860"]
+      interval: 1m
+      timeout: 5s
+      retries: 3
+      start_period: 1m
+      start_interval: 1s
     deploy:
       resources:
         reservations:
