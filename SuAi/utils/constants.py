@@ -18,8 +18,6 @@ db_connection_string = (
     "postgresql://postgres:REDACTED@localhost:5432/su_ai_chatbot"
 )
 
-is_dev = not os.environ.get("prod")
-
 max_tokens = 1024
 temperature = 0.8
 stream = True

@@ -4,14 +4,12 @@ from ..utils import constants
 
 
 class SelectedModel(Enum):
-    openai = "Model 1"
-    ollama = "Model 2 (Local)"
-    huggingface = "Model 3 (Local)"
-    gguf = "Model 4 (Local)"
+    openai = "OpenAI"
+    ollama = "Ollama"
+    huggingface = "Hugging Face"
+    llama_cpp = "Llama.cpp"
 
 selected_model = SelectedModel.openai
 model_choices = (
     [m.value for m in SelectedModel]
-    if constants.is_dev
-    else [SelectedModel.openai.value, SelectedModel.ollama.value]
 )

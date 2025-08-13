@@ -43,8 +43,8 @@ def get_llm() -> BaseLLM:
 
     if settings.selected_model == SelectedModel.ollama:
         _llm[model_name] = _load_ollama_llm()
-    elif settings.selected_model == SelectedModel.gguf:
-        _llm[model_name] = _load_gguf_llm()
+    elif settings.selected_model == SelectedModel.llama_cpp:
+        _llm[model_name] = _load_llama_cpp_llm()
     elif settings.selected_model == SelectedModel.huggingface:
         _llm[model_name] = _load_huggingface_llm()
     elif settings.selected_model == SelectedModel.openai:
@@ -106,12 +106,12 @@ def _load_huggingface_llm() -> BaseLLM:
     return llm
 
 
-def _load_gguf_llm() -> BaseLLM:
+def _load_llama_cpp_llm() -> BaseLLM:
     model_path = hf_hub_download(
         repo_id=constants.gguf_model_id, filename=constants.gguf_model_file
     )
 
-    logger.info(f"Loading GGUF model from {model_path}")
+    logger.info(f"Loading LlamaCpp model from {model_path}")
     n_gpu_layers = -1
     n_batch = 512
 
