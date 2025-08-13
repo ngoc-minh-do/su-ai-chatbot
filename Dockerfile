@@ -31,31 +31,31 @@ RUN uv sync && uv cache clean
 # Remove any temporary files to reduce size
 RUN rm -rf /root/.cache /tmp/*
 
-# =========================
-# Runtime stage
-# =========================
-FROM python:3.13-slim AS runtime
+# # =========================
+# # Runtime stage
+# # =========================
+# FROM python:3.13-slim AS runtime
 
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    curl \
-    && rm -rf /var/lib/apt/lists/*
+# RUN apt-get update && apt-get install -y --no-install-recommends \
+#     curl \
+#     && rm -rf /var/lib/apt/lists/*
 
-# Install uv
-RUN curl -LsSf https://astral.sh/uv/install.sh | sh
-ENV PATH="/root/.local/bin:${PATH}"
+# # Install uv
+# RUN curl -LsSf https://astral.sh/uv/install.sh | sh
+# ENV PATH="/root/.local/bin:${PATH}"
 
-WORKDIR /app
+# WORKDIR /app
 
 # Copy prebuilt virtualenv from builder
-COPY --from=builder /app/.venv .venv
+# COPY --from=builder /app/.venv .venv
 
-COPY . .
+# COPY . .
 
 ENV prod=true
 
 EXPOSE 7860
 
 # Final cleanup (just in case)
-RUN rm -rf /root/.cache /tmp/* /var/lib/apt/lists/*
+# RUN rm -rf /root/.cache /tmp/* /var/lib/apt/lists/*
 
 CMD ["uv", "run", "python", "main.py"]
