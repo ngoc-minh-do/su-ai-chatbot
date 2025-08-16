@@ -1,9 +1,11 @@
-FROM python:3.13-slim
+# Stage 1: Builder with GPU access
+FROM nvidia/cuda:12.8.1-devel-ubuntu24.04 AS builder
 
 WORKDIR /app
 
-RUN apt-get update \
-    && apt-get install -y --no-install-recommends curl \
+# Install build essentials
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        curl \
         build-essential \
         cmake \
         pkg-config \
@@ -11,36 +13,42 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/* /root/.cache
 
 ENV PATH="/root/.local/bin:${PATH}"
+ENV CMAKE_ARGS="-DGGML_CUDA=ON -DGGML_CUDA_ENABLE_UNIFIED_MEMORY=1"
+ENV GGML_CUDA_ENABLE_UNIFIED_MEMORY=1
+ENV LIBRARY_PATH=/usr/lib/x86_64-linux-gnu:$LIBRARY_PATH
+ENV LD_LIBRARY_PATH=/usr/lib/x86_64-linux-gnu:$LD_LIBRARY_PATH
 
-RUN curl -O -L wget https://developer.download.nvidia.com/compute/cuda/12.8.1/local_installers/cuda_12.8.1_570.124.06_linux.run \
-    && sh cuda_12.8.1_570.124.06_linux.run --silent --toolkit \
-    && rm cuda_12.8.1_570.124.06_linux.run
-
-ENV PATH=/usr/local/cuda-12.8/bin:$PATH
-ENV LD_LIBRARY_PATH=/usr/local/cuda-12.8/lib64:$LD_LIBRARY_PATH
-
-# Copy dependency files for caching
+# Copy dependency files
 COPY pyproject.toml uv.lock ./
 
-# Install dependencies with build tools
-RUN CMAKE_ARGS="-DGGML_CUDA=ON -DGGML_CUDA_ENABLE_UNIFIED_MEMORY=ON" \
-    uv sync --no-install-project \
+# Sync dependencies
+RUN uv sync --no-install-project \
     && uv cache clean \
     && rm -rf /root/.cache/pip /tmp/*
 
-# Copy full project
+# Copy project and build
 COPY . .
-
-# Install project dependencies without build tools
-RUN CMAKE_ARGS="-DGGML_CUDA=ON -DGGML_CUDA_ENABLE_UNIFIED_MEMORY=ON" \
-    uv sync --force \
+RUN uv sync --force \
     && uv cache clean \
     && rm -rf /root/.cache/pip /tmp/* \
     && apt-get purge -y build-essential cmake pkg-config \
     && apt-get autoremove -y \
     && rm -rf /var/lib/apt/lists/*
 
+# Stage 2: Runtime image
+FROM nvidia/cuda:12.8.1-runtime-ubuntu24.04
+
+WORKDIR /app
+
+ENV PATH="/root/.local/bin:${PATH}"
+ENV LIBRARY_PATH=/usr/lib/x86_64-linux-gnu:$LIBRARY_PATH
+ENV LD_LIBRARY_PATH=/usr/lib/x86_64-linux-gnu:$LD_LIBRARY_PATH
+ENV NVIDIA_VISIBLE_DEVICES=all
+ENV NVIDIA_DRIVER_CAPABILITIES=compute,utility
 ENV prod=true
+
+# Copy built files from builder
+COPY --from=builder /app /app
 
 EXPOSE 7860
 
