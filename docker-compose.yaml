@@ -4,8 +4,6 @@ services:
   worker:
     build:
       context: .
-      args:
-        - NVIDIA_VISIBLE_DEVICES=all
     image: su-ai-chatbot
     container_name: su-ai-chatbot
     networks:
@@ -16,8 +14,6 @@ services:
       TZ: Asia/Tokyo
     # ports:
     #   - 7860:7860
-      NVIDIA_VISIBLE_DEVICES: all
-      NVIDIA_DRIVER_CAPABILITIES: compute,utility
     restart: unless-stopped
     labels:
       - sablier.enable=true
@@ -28,7 +24,6 @@ services:
       retries: 3
       start_period: 1m
       start_interval: 1s
-    runtime: nvidia
     deploy:
       resources:
         reservations:

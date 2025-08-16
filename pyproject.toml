@@ -28,3 +28,6 @@ dependencies = [
     "torch>=2.8.0",
     "transformers>=4.55.0",
 ]
+
+[tool.uv.sources]
+llama-cpp-python = { url = "https://simple-share.ngoclab.com/llama_cpp_python-0.3.16-cp313-cp313-linux_x86_64.whl" }

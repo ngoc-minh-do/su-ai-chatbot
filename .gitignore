@@ -175,4 +175,4 @@ cython_debug/
 
 
 # Local virtual environment
-local_packages
+local-packages
