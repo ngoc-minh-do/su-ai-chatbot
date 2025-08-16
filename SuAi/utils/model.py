@@ -63,6 +63,7 @@ def _load_ollama_llm() -> BaseLLM:
         num_predict=constants.max_tokens,
         num_gpu=10000,
         extract_reasoning=True,
+        num_ctx=constants.context_window,
     )
 
     return llm
@@ -112,14 +113,12 @@ def _load_llama_cpp_llm() -> BaseLLM:
     )
 
     logger.info(f"Loading LlamaCpp model from {model_path}")
-    n_gpu_layers = -1
-    n_batch = 512
 
     llm = LlamaCpp(
         model_path=model_path,
-        n_gpu_layers=n_gpu_layers,
-        n_batch=n_batch,
-        n_ctx=8192,
+        n_gpu_layers=constants.n_gpu_layers,
+        n_batch=512,
+        n_ctx=constants.context_window,
         max_tokens=constants.max_tokens,
         temperature=constants.temperature,
     )

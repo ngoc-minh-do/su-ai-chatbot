@@ -20,6 +20,8 @@ db_connection_string = (
 
 max_tokens = 1024
 temperature = 0.8
+context_window = 8192
+n_gpu_layers = 20
 stream = True
 
 query_enhancement = False

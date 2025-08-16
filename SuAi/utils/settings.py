@@ -5,9 +5,9 @@ from ..utils import constants
 
 class SelectedModel(Enum):
     openai = "OpenAI"
-    ollama = "Ollama"
-    huggingface = "Hugging Face"
     llama_cpp = "Llama.cpp"
+    huggingface = "Hugging Face"
+    ollama = "Ollama"
 
 selected_model = SelectedModel.openai
 model_choices = (
