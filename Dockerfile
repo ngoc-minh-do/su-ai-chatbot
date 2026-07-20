@@ -33,8 +33,6 @@ RUN uv sync \
     && apt-get autoremove -y \
     && rm -rf /var/lib/apt/lists/*
 
-ENV prod=true
-
 EXPOSE 7860
 
 CMD uv run python main.py

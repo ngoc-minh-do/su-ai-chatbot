@@ -12,6 +12,9 @@ services:
       - /mnt/linux/docker/su-ai-chatbot:/su-ai-chatbot
     environment:
       TZ: Asia/Tokyo
+      prod: "true"
+    env_file:
+      - /mnt/linux/docker/su-ai-chatbot/.env.prod
     # ports:
     #   - 7860:7860
     restart: unless-stopped
