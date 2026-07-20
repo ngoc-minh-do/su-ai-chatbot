@@ -56,6 +56,14 @@ def create_rag_chain() -> RunnableSerializable:
 think_re = re.compile(r"<think>.*?</think>", re.DOTALL)
 
 def response_fn(message, history, selected_model):
+    if not message or not message.strip():
+        yield "質問を入力してください。"
+        return
+
+    if len(message) > 2000:
+        yield "質問が長すぎます。2000文字以内で入力してください。"
+        return
+
     settings.selected_model = settings.SelectedModel(selected_model)
 
     yield "Loading the models..."
