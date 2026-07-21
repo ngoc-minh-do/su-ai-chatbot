@@ -166,7 +166,7 @@ def submit(question: str, answer1: str, answer2: str, selected_answer: int):
 
 
 def model_change(value):
-    pass
+    settings.selected_model = SelectedModel(value)
 
 
 def render():

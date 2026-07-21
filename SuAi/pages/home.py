@@ -119,7 +119,7 @@ def response_fn(message, history, selected_model):
 
 
 def model_change(value):
-    pass
+    settings.selected_model = SelectedModel(value)
 
 
 css = """

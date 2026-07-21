@@ -1,3 +1,4 @@
+import os
 from enum import Enum
 
 
@@ -8,5 +9,10 @@ class SelectedModel(Enum):
     ollama = "Ollama"
 
 
-selected_model = SelectedModel.openai
+_selected = os.environ.get("SELECTED_MODEL", "openai")
+selected_model = (
+    SelectedModel[_selected]
+    if _selected in SelectedModel._member_names_
+    else SelectedModel.openai
+)
 model_choices = [m.value for m in SelectedModel]
