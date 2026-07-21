@@ -19,14 +19,14 @@ ENV LD_LIBRARY_PATH=/usr/lib/x86_64-linux-gnu:$LD_LIBRARY_PATH
 # Copy dependency files
 COPY pyproject.toml uv.lock ./
 
-# Sync dependencies
-RUN uv sync --no-install-project \
+# Sync dependencies only (cached layer)
+RUN uv sync --no-install-project --frozen \
     && uv cache clean \
     && rm -rf /root/.cache/pip /tmp/*
 
-# Copy project and build
+# Copy project and install it (deps already cached)
 COPY . .
-RUN uv sync \
+RUN uv sync --frozen \
     && uv cache clean \
     && rm -rf /root/.cache/pip /tmp/* \
     && apt-get purge -y build-essential cmake pkg-config \

@@ -166,7 +166,7 @@ def submit(question: str, answer1: str, answer2: str, selected_answer: int):
 
 
 def model_change(value):
-    return gr.update(value=SelectedModel(value).value)
+    pass
 
 
 def render():
@@ -177,7 +177,7 @@ def render():
                 value=settings.selected_model.value,
                 label="Model:",
             )
-            model_selector.change(model_change, [model_selector], [model_selector])
+            model_selector.change(model_change, [model_selector])
 
         with gr.Row():
             generateQA = gr.Button("質問と回答を生成")

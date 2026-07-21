@@ -15,7 +15,7 @@ logger = logging.get_logger(__name__)
 seen_paras = set()
 
 
-def bs4_extractor(html: str) -> str:
+def bs4_extractor(seen_paras: set[str], html: str) -> str:
     soup = BeautifulSoup(html, "lxml")
     html_string = re.sub(r"(\n\s*){2,}", "\n\n", soup.text).strip()
 
@@ -25,10 +25,10 @@ def bs4_extractor(html: str) -> str:
             seen_paras.add(para)
             html_string_paras.append(para)
 
-    return "\n\n".join(html_string_paras)
-
 
 def main():
+    seen_paras: set[str] = set()
+
     logger.info("Initializing the embedding model...")
 
     model_kwargs = {"device": constants.device}
@@ -70,7 +70,7 @@ def main():
         loader = RecursiveUrlLoader(
             url=web_path.get("url"),
             max_depth=web_path.get("max_depth", 1),
-            extractor=bs4_extractor,
+            extractor=lambda html: bs4_extractor(seen_paras, html),
             exclude_dirs=web_path.get("exclude_dirs"),
         )
 

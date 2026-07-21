@@ -2,12 +2,15 @@ from sqlalchemy.orm import Session
 
 from ..db.engine import engine
 from ..db.models import TrainingQaData
-from ..db.utils import create_database
 from ..utils import logging
 
 logger = logging.get_logger(__name__)
 
-create_database()
+
+def init_db_tables():
+    from ..db.utils import create_database
+
+    create_database()
 
 
 def create_training_qa_data(question: str, answer: str, good: int) -> None:

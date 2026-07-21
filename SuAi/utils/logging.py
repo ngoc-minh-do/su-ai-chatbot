@@ -19,6 +19,7 @@ def get_logger(name: str) -> logging.Logger:
             "%(asctime)s | %(name)s | %(levelname)s | %(message)s"
         )
         _default_handler.setFormatter(formatter)
-    logger.addHandler(_default_handler)
+    if _default_handler not in logger.handlers:
+        logger.addHandler(_default_handler)
 
     return logger
