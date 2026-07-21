@@ -17,7 +17,7 @@ dependencies = [
     "langchain-ollama>=0.3.6",
     "langchain-openai>=0.3.29",
     "langchain-qdrant>=0.2.0",
-    "llama-cpp-python>=0.3.15",
+    "llama-cpp-python>=0.3.34",
     "lxml>=6.0.0",
     "psycopg2-binary>=2.9.10",
     "python-dotenv>=1.1.1",
@@ -29,5 +29,10 @@ dependencies = [
     "transformers>=4.55.0",
 ]
 
+[[tool.uv.index]]
+name = "llama-cpp-python-wheel"
+url = "https://abetlen.github.io/llama-cpp-python/whl/cu132"
+explicit = true
+
 [tool.uv.sources]
-llama-cpp-python = { url = "https://simple-share.ngoclab.com/llama_cpp_python-0.3.16-cp313-cp313-linux_x86_64.whl" }
+llama-cpp-python = { index = "llama-cpp-python-wheel" }
