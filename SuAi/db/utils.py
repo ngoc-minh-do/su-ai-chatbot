@@ -1,4 +1,4 @@
-from ..db.engine import engine
+from ..db.engine import get_engine
 from ..db.models import Base
 from ..utils import logging
 
@@ -7,7 +7,7 @@ logger = logging.get_logger(__name__)
 
 def create_database() -> None:
     logger.info("Creating tables...")
-    Base.metadata.create_all(engine)
+    Base.metadata.create_all(get_engine())
 
 
 def drop_database(force=False) -> None:
@@ -20,7 +20,7 @@ def drop_database(force=False) -> None:
             return
 
     logger.info("Dropping tables...")
-    Base.metadata.drop_all(engine)
+    Base.metadata.drop_all(get_engine())
 
 
 def reset_database() -> None:

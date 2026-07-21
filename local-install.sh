@@ -1,2 +1,1 @@
-export GGML_CUDA_ENABLE_UNIFIED_MEMORY=1
-uv sync
+export GGML_CUDA_ENABLE_UNIFIED_MEMORY=1 && uv sync

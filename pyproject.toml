@@ -1,7 +1,7 @@
 [project]
 name = "su-ai-chatbot"
 version = "0.1.0"
-description = "Add your description here"
+description = "AI chatbot for Sharefull Shift service — RAG-powered Japanese-language assistant"
 readme = "README.md"
 requires-python = ">=3.13,<3.14"
 dependencies = [

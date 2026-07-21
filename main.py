@@ -1,3 +1,7 @@
+from SuAi.utils.env import load_env
+
+load_env()
+
 from SuAi.db import engine
 from SuAi.db.operations import init_db_tables
 from SuAi.pages.home import main

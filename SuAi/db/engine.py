@@ -1,19 +1,29 @@
 import logging as loggingLib
 import re
 
-from sqlalchemy import create_engine, text
+from sqlalchemy import Engine, create_engine, text
 
 from ..utils import constants, logging
 
 logger = logging.get_logger(__name__)
 
 _IDENTIFIER_RE = re.compile(r"^[a-zA-Z_][a-zA-Z0-9_]*$")
+_engine: Engine | None = None
 
 
 def _validate_identifier(name: str) -> str:
     if not _IDENTIFIER_RE.match(name):
         raise ValueError(f"Invalid database identifier: {name}")
     return name
+
+
+def get_engine() -> Engine:
+    global _engine
+    if _engine is None:
+        _engine = create_engine(
+            constants.db_connection_string, echo=logger.level == loggingLib.DEBUG
+        )
+    return _engine
 
 
 def init_database():
@@ -32,8 +42,3 @@ def init_database():
         if not cursor.fetchone():
             logger.info(f"Database '{dbname}' does not exist, creating it...")
             conn.execute(text(f"CREATE DATABASE {dbname}"))
-
-
-engine = create_engine(
-    constants.db_connection_string, echo=logger.level == loggingLib.DEBUG
-)

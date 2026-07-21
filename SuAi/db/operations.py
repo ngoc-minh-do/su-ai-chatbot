@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
 
-from ..db.engine import engine
+from ..db.engine import get_engine
 from ..db.models import TrainingQaData
 from ..utils import logging
 
@@ -15,7 +15,7 @@ def init_db_tables():
 
 def create_training_qa_data(question: str, answer: str, good: int) -> None:
     try:
-        with Session(engine) as session:
+        with Session(get_engine()) as session:
             data = TrainingQaData(question=question, answer=answer, good=good)
             session.add(data)
             session.commit()
