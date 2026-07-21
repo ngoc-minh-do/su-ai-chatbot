@@ -14,9 +14,7 @@ qdrant_url = os.environ.get("QDRANT_URL", "http://localhost:6333")
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-db_connection_string = os.environ.get(
-    "DATABASE_URL", ""
-)
+db_connection_string = os.environ.get("DATABASE_URL", "")
 
 max_tokens = int(os.environ.get("MAX_TOKENS", "1024"))
 temperature = float(os.environ.get("TEMPERATURE", "0.8"))

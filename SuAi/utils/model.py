@@ -56,9 +56,7 @@ def get_llm(selected_model: SelectedModel | None = None) -> BaseLLM:
             raise ValueError(f"Unknown model: {selected_model}")
     except Exception as e:
         logger.error(f"Failed to load LLM '{selected_model.value}': {e}")
-        raise RuntimeError(
-            f"Failed to load {selected_model.value}: {e}"
-        ) from e
+        raise RuntimeError(f"Failed to load {selected_model.value}: {e}") from e
 
     return _llm[model_name]
 

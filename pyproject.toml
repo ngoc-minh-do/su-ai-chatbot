@@ -37,3 +37,10 @@ explicit = true
 
 [tool.uv.sources]
 llama-cpp-python = { index = "llama-cpp-python-wheel" }
+
+[dependency-groups]
+dev = [
+    "pre-commit>=4.6.0",
+    "pyright>=1.1.411",
+    "ruff>=0.12.8",
+]

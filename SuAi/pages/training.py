@@ -89,7 +89,9 @@ def generate_qa(selected_model):
     except Exception as e:
         logger.error(f"Failed to retrieve documents: {e}")
         yield (
-            gr.update(value=f"ドキュメントの取得に失敗しました: {e}", interactive=False),
+            gr.update(
+                value=f"ドキュメントの取得に失敗しました: {e}", interactive=False
+            ),
             gr.update(value="", interactive=False),
             gr.update(value="", interactive=False),
         )

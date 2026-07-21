@@ -63,7 +63,9 @@ def create_rag_chain(selected_model: SelectedModel) -> RunnableSerializable:
     _chain[model_name] = rag_chain
     return rag_chain
 
+
 think_re = re.compile(r"<think>.*?</think>", re.DOTALL)
+
 
 def response_fn(message, history, selected_model):
     if not message or not message.strip():

@@ -9,6 +9,7 @@ logger = logging.get_logger(__name__)
 
 _IDENTIFIER_RE = re.compile(r"^[a-zA-Z_][a-zA-Z0-9_]*$")
 
+
 def _validate_identifier(name: str) -> str:
     if not _IDENTIFIER_RE.match(name):
         raise ValueError(f"Invalid database identifier: {name}")
