@@ -25,6 +25,8 @@ def bs4_extractor(seen_paras: set[str], html: str) -> str:
             seen_paras.add(para)
             html_string_paras.append(para)
 
+    return "\n\n".join(html_string_paras)
+
 
 def main():
     seen_paras: set[str] = set()
@@ -65,11 +67,17 @@ def main():
 
     docs = []
     for web_path in web_paths:
-        logger.info("Loading web page: %s", web_path.get("url"))
+        url = web_path.get("url")
+        logger.info("Loading web page: %s", url)
+
+        max_depth_raw = web_path.get("max_depth", 1)
+        max_depth = (
+            int(max_depth_raw) if isinstance(max_depth_raw, str) else max_depth_raw
+        )
 
         loader = RecursiveUrlLoader(
-            url=web_path.get("url"),
-            max_depth=web_path.get("max_depth", 1),
+            url=url,  # type: ignore[reportArgumentType]
+            max_depth=max_depth,  # type: ignore[reportArgumentType]
             extractor=lambda html: bs4_extractor(seen_paras, html),
             exclude_dirs=web_path.get("exclude_dirs"),
         )
@@ -91,7 +99,7 @@ def main():
     #         f.write(doc.page_content)
 
     logger.info("Adding documents to the vector store...")
-    vector_store.add_documents(docs)
+    vector_store.add_documents(docs)  # type: ignore[reportArgumentType]
 
 
 if __name__ == "__main__":

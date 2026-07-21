@@ -135,7 +135,6 @@ def main():
         css=css,
     ) as demo:
         demo.title = "Shareful Shift AI Assistant"
-        demo.description = "シェアフルシフトのAIアシスタントです。シフトの作成・管理について質問してください。"
 
         model_selector = gr.Dropdown(
             choices=settings.model_choices,

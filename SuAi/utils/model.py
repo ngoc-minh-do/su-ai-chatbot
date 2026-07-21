@@ -10,6 +10,7 @@ from langchain.retrievers.multi_query import MultiQueryRetriever
 from langchain_community.document_transformers import EmbeddingsRedundantFilter
 from langchain_community.llms.llamacpp import LlamaCpp
 from langchain_core.documents import Document
+from langchain_core.language_models.base import BaseLanguageModel
 from langchain_core.language_models.llms import BaseLLM
 from langchain_core.retrievers import BaseRetriever
 from langchain_core.vectorstores import VectorStore
@@ -26,12 +27,12 @@ from ..utils.settings import SelectedModel
 
 logger = logging.get_logger(__name__)
 
-_llm: dict[str, BaseLLM] = {}
-_vector_store: VectorStore = None
+_llm: dict[str, BaseLanguageModel] = {}
+_vector_store: QdrantVectorStore | None = None
 _retriever: dict[str, ContextualCompressionRetriever] = {}
 
 
-def get_llm(selected_model: SelectedModel | None = None) -> BaseLLM:
+def get_llm(selected_model: SelectedModel | None = None) -> BaseLanguageModel:
     global _llm
     if selected_model is None:
         selected_model = settings.selected_model
@@ -61,27 +62,26 @@ def get_llm(selected_model: SelectedModel | None = None) -> BaseLLM:
     return _llm[model_name]
 
 
-def _load_ollama_llm() -> BaseLLM:
+def _load_ollama_llm() -> ChatOllama:
     llm = ChatOllama(
         base_url=os.environ.get("OLLAMA_URL"),
-        model=os.environ.get("OLLAMA_MODEL"),
+        model=os.environ.get("OLLAMA_MODEL"),  # type: ignore[reportArgumentType]
         temperature=constants.temperature,
         num_predict=constants.max_tokens,
         num_gpu=10000,
-        extract_reasoning=True,
         num_ctx=constants.context_window,
     )
 
     return llm
 
 
-def _load_openai_llm() -> BaseLLM:
+def _load_openai_llm() -> ChatOpenAI:
     llm = ChatOpenAI(
         base_url=os.environ.get("OPENAI_API_URL"),
-        api_key=os.environ.get("OPENAI_API_KEY"),
-        model=os.environ.get("OPENAI_MODEL"),
+        api_key=os.environ.get("OPENAI_API_KEY"),  # type: ignore[reportArgumentType]
+        model=os.environ.get("OPENAI_MODEL"),  # type: ignore[reportArgumentType]
         temperature=constants.temperature,
-        max_tokens=constants.max_tokens,
+        max_completion_tokens=constants.max_tokens,
     )
 
     return llm
@@ -106,7 +106,7 @@ def _load_huggingface_llm() -> BaseLLM:
             repetition_penalty=1.05,
             return_full_text=False,
         ),
-        device=constants.device,
+        device=constants.device,  # type: ignore[reportArgumentType]
         model_kwargs={"quantization_config": quantization_config},
     )
 
@@ -120,7 +120,7 @@ def _load_llama_cpp_llm() -> BaseLLM:
 
     logger.info(f"Loading LlamaCpp model from {model_path}")
 
-    llm = LlamaCpp(
+    llm = LlamaCpp(  # type: ignore[reportCallIssue]
         model_path=model_path,
         n_gpu_layers=constants.n_gpu_layers,
         n_batch=512,
@@ -184,7 +184,7 @@ def get_random_docs() -> list[Document]:
 
 
 def get_retriever(
-    vector_store: VectorStore, llm: BaseLLM, key: str | None = None
+    vector_store: VectorStore, llm: BaseLanguageModel, key: str | None = None
 ) -> BaseRetriever:
     global _retriever
     if key is None:
@@ -203,9 +203,12 @@ def get_retriever(
     logger.info(f"Using {base_retriever.__class__.__name__} as base retriever")
 
     splitter = CharacterTextSplitter(chunk_size=300, chunk_overlap=0, separator=". ")
-    redundant_filter = EmbeddingsRedundantFilter(embeddings=vector_store.embeddings)
+    embeddings = vector_store.embeddings
+    if embeddings is None:
+        raise RuntimeError("Vector store has no embeddings configured")
+    redundant_filter = EmbeddingsRedundantFilter(embeddings=embeddings)
     relevant_filter = EmbeddingsFilter(
-        embeddings=vector_store.embeddings,
+        embeddings=embeddings,
         similarity_threshold=0.5,
         k=3,
     )
