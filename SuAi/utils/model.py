@@ -26,33 +26,41 @@ from ..utils.settings import SelectedModel
 
 logger = logging.get_logger(__name__)
 
-_llm: BaseLLM = {}
+_llm: dict[str, BaseLLM] = {}
 _vector_store: VectorStore = None
-_retriever: ContextualCompressionRetriever = None
+_retriever: dict[str, ContextualCompressionRetriever] = {}
 
 
-def get_llm() -> BaseLLM:
+def get_llm(selected_model: SelectedModel | None = None) -> BaseLLM:
     global _llm
-    model_name = settings.selected_model.name
+    if selected_model is None:
+        selected_model = settings.selected_model
+    model_name = selected_model.name
 
     if _llm.get(model_name) is not None:
         logger.info(f"LLM {model_name} already loaded, returning existing instance.")
-        return _llm.get(model_name)
+        return _llm[model_name]
 
-    logger.info(f"Loading LLM {model_name}...")
+    logger.info(f"Loading LLM {selected_model.value}...")
 
-    if settings.selected_model == SelectedModel.ollama:
-        _llm[model_name] = _load_ollama_llm()
-    elif settings.selected_model == SelectedModel.llama_cpp:
-        _llm[model_name] = _load_llama_cpp_llm()
-    elif settings.selected_model == SelectedModel.huggingface:
-        _llm[model_name] = _load_huggingface_llm()
-    elif settings.selected_model == SelectedModel.openai:
-        _llm[model_name] = _load_openai_llm()
-    else:
-        pass
+    try:
+        if selected_model == SelectedModel.ollama:
+            _llm[model_name] = _load_ollama_llm()
+        elif selected_model == SelectedModel.llama_cpp:
+            _llm[model_name] = _load_llama_cpp_llm()
+        elif selected_model == SelectedModel.huggingface:
+            _llm[model_name] = _load_huggingface_llm()
+        elif selected_model == SelectedModel.openai:
+            _llm[model_name] = _load_openai_llm()
+        else:
+            raise ValueError(f"Unknown model: {selected_model}")
+    except Exception as e:
+        logger.error(f"Failed to load LLM '{selected_model.value}': {e}")
+        raise RuntimeError(
+            f"Failed to load {selected_model.value}: {e}"
+        ) from e
 
-    return _llm.get(model_name)
+    return _llm[model_name]
 
 
 def _load_ollama_llm() -> BaseLLM:
@@ -132,21 +140,25 @@ def get_vector_store() -> QdrantVectorStore:
         logger.info("Vector store already loaded, returning existing instance.")
         return _vector_store
 
-    logger.info("Loading embeddings...")
-    model_kwargs = {"device": constants.device}
-    embeddings = HuggingFaceEmbeddings(
-        model_name=constants.embedding_model_id,
-        model_kwargs=model_kwargs,
-    )
+    try:
+        logger.info("Loading embeddings...")
+        model_kwargs = {"device": constants.device}
+        embeddings = HuggingFaceEmbeddings(
+            model_name=constants.embedding_model_id,
+            model_kwargs=model_kwargs,
+        )
 
-    logger.info("Creating vector store...")
-    vector_store = QdrantVectorStore.from_existing_collection(
-        embedding=embeddings,
-        collection_name=constants.qdrant_collection_name,
-        url=constants.qdrant_url,
-    )
+        logger.info("Creating vector store...")
+        vector_store = QdrantVectorStore.from_existing_collection(
+            embedding=embeddings,
+            collection_name=constants.qdrant_collection_name,
+            url=constants.qdrant_url,
+        )
+    except Exception as e:
+        logger.error(f"Failed to initialize vector store: {e}")
+        raise RuntimeError(f"Vector store unavailable: {e}") from e
+
     _vector_store = vector_store
-
     return vector_store
 
 
@@ -173,13 +185,18 @@ def get_random_docs() -> list[Document]:
     return documents
 
 
-def get_retriever(vector_store: VectorStore, llm: BaseLLM) -> BaseRetriever:
+def get_retriever(
+    vector_store: VectorStore, llm: BaseLLM, key: str | None = None
+) -> BaseRetriever:
     global _retriever
-    if _retriever is not None:
-        logger.info("Retriever already loaded, returning existing instance.")
-        return _retriever
+    if key is None:
+        key = settings.selected_model.name
 
-    logger.info("Creating retriever...")
+    if _retriever.get(key) is not None:
+        logger.info(f"Retriever '{key}' already loaded, returning existing instance.")
+        return _retriever[key]
+
+    logger.info(f"Creating retriever for '{key}'...")
     base_retriever = (
         MultiQueryRetriever.from_llm(retriever=vector_store.as_retriever(), llm=llm)
         if constants.query_enhancement
@@ -203,7 +220,7 @@ def get_retriever(vector_store: VectorStore, llm: BaseLLM) -> BaseRetriever:
         base_retriever=base_retriever,
     )
 
-    _retriever = compression_retriever
+    _retriever[key] = compression_retriever
 
     return compression_retriever
 

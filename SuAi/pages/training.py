@@ -11,6 +11,7 @@ from langchain_core.runnables import (
 
 from ..db.operations import create_training_qa_data
 from ..utils import logging, model, settings
+from ..utils.settings import SelectedModel
 
 logger = logging.get_logger(__name__)
 
@@ -20,10 +21,10 @@ def extract_question_only(output: str) -> str:
     return output.replace("###", "").strip()
 
 
-def create_question_chain() -> RunnableSerializable:
-    logger.info("Creating question chain...")
+def create_question_chain(selected_model: SelectedModel) -> RunnableSerializable:
+    logger.info(f"Creating question chain for '{selected_model.value}'...")
 
-    llm = model.get_llm()
+    llm = model.get_llm(selected_model)
 
     template = """
 ### 命令:
@@ -51,10 +52,10 @@ def create_question_chain() -> RunnableSerializable:
     return question_chain
 
 
-def create_answer_chain() -> RunnableSerializable:
-    logger.info("Creating answer chain...")
+def create_answer_chain(selected_model: SelectedModel) -> RunnableSerializable:
+    logger.info(f"Creating answer chain for '{selected_model.value}'...")
 
-    llm = model.get_llm()
+    llm = model.get_llm(selected_model)
 
     template = """
 ### 命令:
@@ -81,15 +82,32 @@ def create_answer_chain() -> RunnableSerializable:
 
 def generate_qa(selected_model):
     logger.info("Generating question and answers...")
-    settings.selected_model = settings.SelectedModel(selected_model)
+    model_enum = SelectedModel(selected_model)
 
-    sample_docs = model.get_random_docs()
+    try:
+        sample_docs = model.get_random_docs()
+    except Exception as e:
+        logger.error(f"Failed to retrieve documents: {e}")
+        yield (
+            gr.update(value=f"ドキュメントの取得に失敗しました: {e}", interactive=False),
+            gr.update(value="", interactive=False),
+            gr.update(value="", interactive=False),
+        )
+        return
 
     context = model.format_docs(sample_docs)
 
-    question_chain = create_question_chain()
-
-    question = question_chain.invoke(context)
+    try:
+        question_chain = create_question_chain(model_enum)
+        question = question_chain.invoke(context)
+    except Exception as e:
+        logger.error(f"Failed to generate question: {e}")
+        yield (
+            gr.update(value=f"質問の生成に失敗しました: {e}", interactive=False),
+            gr.update(value="", interactive=False),
+            gr.update(value="", interactive=False),
+        )
+        return
 
     yield (
         gr.update(value=question, interactive=False),
@@ -97,11 +115,18 @@ def generate_qa(selected_model):
         gr.update(value="", interactive=False),
     )
 
-    answer_chain = create_answer_chain()
-
-    map_chain = RunnableParallel(answer1=answer_chain, answer2=answer_chain)
-
-    answer = map_chain.invoke({"context": context, "question": question})
+    try:
+        answer_chain = create_answer_chain(model_enum)
+        map_chain = RunnableParallel(answer1=answer_chain, answer2=answer_chain)
+        answer = map_chain.invoke({"context": context, "question": question})
+    except Exception as e:
+        logger.error(f"Failed to generate answers: {e}")
+        yield (
+            gr.update(interactive=True),
+            gr.update(value=f"回答の生成に失敗しました: {e}", interactive=True),
+            gr.update(value="", interactive=True),
+        )
+        return
 
     answer1 = answer["answer1"]
     answer2 = answer["answer2"]
@@ -126,18 +151,20 @@ def submit(question: str, answer1: str, answer2: str, selected_answer: int):
         f"Submitting question: {question}, answer1: {answer1}, answer2: {answer2}, selected_answer: {selected_answer}"
     )
 
-    if question.strip() and answer1.strip():
-        create_training_qa_data(question, answer1, 1 if selected_answer == 1 else 0)
+    try:
+        if question.strip() and answer1.strip():
+            create_training_qa_data(question, answer1, 1 if selected_answer == 1 else 0)
 
-    if question.strip() and answer2.strip():
-        create_training_qa_data(question, answer2, 1 if selected_answer == 2 else 0)
+        if question.strip() and answer2.strip():
+            create_training_qa_data(question, answer2, 1 if selected_answer == 2 else 0)
+    except Exception as e:
+        logger.error(f"Failed to save training data: {e}")
 
     return gr.update(value=""), gr.update(value=""), gr.update(value="")
 
 
 def model_change(value):
-    settings.selected_model = settings.SelectedModel(value)
-    return gr.update(value=settings.selected_model.value)
+    return gr.update(value=SelectedModel(value).value)
 
 
 def render():

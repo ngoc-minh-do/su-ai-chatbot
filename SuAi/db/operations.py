@@ -11,8 +11,12 @@ create_database()
 
 
 def create_training_qa_data(question: str, answer: str, good: int) -> None:
-    with Session(engine) as session:
-        data = TrainingQaData(question=question, answer=answer, good=good)
-        session.add(data)
-        session.commit()
-        logger.info(f"create_training_qa_data: {data}")
+    try:
+        with Session(engine) as session:
+            data = TrainingQaData(question=question, answer=answer, good=good)
+            session.add(data)
+            session.commit()
+            logger.info(f"create_training_qa_data: {data}")
+    except Exception as e:
+        logger.error(f"Failed to save training QA data: {e}")
+        raise RuntimeError(f"Failed to save training data: {e}") from e

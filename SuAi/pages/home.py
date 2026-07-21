@@ -7,16 +7,25 @@ from langchain_core.runnables import RunnablePassthrough, RunnableSerializable
 
 from ..pages import training
 from ..utils import constants, logging, model, settings
+from ..utils.settings import SelectedModel
 
 logger = logging.get_logger(__name__)
 
+_chain: dict[str, RunnableSerializable] = {}
 
-def create_rag_chain() -> RunnableSerializable:
-    logger.info("Creating rag chain...")
 
-    llm = model.get_llm()
+def create_rag_chain(selected_model: SelectedModel) -> RunnableSerializable:
+    model_name = selected_model.name
+
+    if _chain.get(model_name) is not None:
+        logger.info(f"RAG chain '{model_name}' already cached, reusing.")
+        return _chain[model_name]
+
+    logger.info(f"Creating RAG chain for '{selected_model.value}'...")
+
+    llm = model.get_llm(selected_model)
     vector_store = model.get_vector_store()
-    retriever = model.get_retriever(vector_store, llm=llm)
+    retriever = model.get_retriever(vector_store, llm=llm, key=model_name)
 
     template = """
 ### 命令:
@@ -51,6 +60,7 @@ def create_rag_chain() -> RunnableSerializable:
 
     logger.debug("\n" + rag_chain.get_graph().draw_ascii())
 
+    _chain[model_name] = rag_chain
     return rag_chain
 
 think_re = re.compile(r"<think>.*?</think>", re.DOTALL)
@@ -64,41 +74,50 @@ def response_fn(message, history, selected_model):
         yield "質問が長すぎます。2000文字以内で入力してください。"
         return
 
-    settings.selected_model = settings.SelectedModel(selected_model)
+    model_enum = SelectedModel(selected_model)
 
-    yield "Loading the models..."
-    rag_chain = create_rag_chain()
+    try:
+        yield "モデルを読み込み中..."
+        rag_chain = create_rag_chain(model_enum)
+    except Exception as e:
+        logger.error(f"Failed to create RAG chain: {e}")
+        yield f"モデルの読み込みに失敗しました: {e}"
+        return
 
-    yield "Generating the response..."
+    yield "回答を生成中..."
     logger.info(f"Generating response for message: {message}")
 
-    if constants.stream:
-        buffer = ""
-        cleaned_buffer = ""
-        stream = rag_chain.stream(message)
+    try:
+        if constants.stream:
+            buffer = ""
+            cleaned_buffer = ""
+            stream = rag_chain.stream(message)
 
-        while True:
-            try:
-                chunk = next(stream)
+            while True:
+                try:
+                    chunk = next(stream)
 
-                if not chunk:
-                    continue
+                    if not chunk:
+                        continue
 
-                buffer += chunk
-                cleaned_buffer = think_re.sub("", buffer).strip()
+                    buffer += chunk
+                    cleaned_buffer = think_re.sub("", buffer).strip()
 
-                if "<think>" not in cleaned_buffer:
+                    if " thinking" not in cleaned_buffer:
+                        yield cleaned_buffer
+                except StopIteration:
+                    print(f"Thinking: {'\n'.join(think_re.findall(buffer)).strip()}")
                     yield cleaned_buffer
-            except StopIteration:
-                print(f"Thinking: {'\n'.join(think_re.findall(buffer)).strip()}")
-                yield cleaned_buffer
-                break
-    else:
-        yield rag_chain.invoke(message)
+                    break
+        else:
+            yield rag_chain.invoke(message)
+    except Exception as e:
+        logger.error(f"Error generating response: {e}")
+        yield f"回答の生成中にエラーが発生しました: {e}"
 
 
 def model_change(value):
-    settings.selected_model = settings.SelectedModel(value)
+    pass
 
 
 css = """
