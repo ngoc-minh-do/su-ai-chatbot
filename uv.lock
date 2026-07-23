@@ -2013,7 +2013,6 @@ dependencies = [
     { name = "llama-cpp-python" },
     { name = "lxml" },
     { name = "psycopg2-binary" },
-    { name = "pytest" },
     { name = "python-dotenv" },
     { name = "qdrant-client" },
     { name = "sentence-transformers" },
@@ -2027,6 +2026,7 @@ dependencies = [
 dev = [
     { name = "pre-commit" },
     { name = "pyright" },
+    { name = "pytest" },
     { name = "ruff" },
 ]
 
@@ -2047,7 +2047,6 @@ requires-dist = [
     { name = "llama-cpp-python", specifier = ">=0.3.34", index = "https://abetlen.github.io/llama-cpp-python/whl/cu132" },
     { name = "lxml", specifier = ">=6.0.0" },
     { name = "psycopg2-binary", specifier = ">=2.9.10" },
-    { name = "pytest", specifier = ">=9.1.1" },
     { name = "python-dotenv", specifier = ">=1.1.1" },
     { name = "qdrant-client", specifier = ">=1.15.1" },
     { name = "sentence-transformers", specifier = ">=5.1.0" },
@@ -2061,6 +2060,7 @@ requires-dist = [
 dev = [
     { name = "pre-commit", specifier = ">=4.6.0" },
     { name = "pyright", specifier = ">=1.1.411" },
+    { name = "pytest", specifier = ">=9.1.1" },
     { name = "ruff", specifier = ">=0.12.8" },
 ]
 
