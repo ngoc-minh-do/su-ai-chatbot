@@ -42,8 +42,8 @@ jobs:
           TOKENIZERS_PARALLELISM=false
           LOGLEVEL="INFO"
           OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}
-          OPENAI_API_URL="http://litellm.docker-02.local"
-          OPENAI_MODEL="mistral/devstral-small-latest"
+          OPENAI_API_URL="http://bifrost.docker-03.local/v1"
+          OPENAI_MODEL="chat-default"
           OLLAMA_URL="http://ollama.docker-02.local"
           OLLAMA_MODEL="deepseek-r1:8b"
           QDRANT_URL="http://192.168.0.41:6333"
