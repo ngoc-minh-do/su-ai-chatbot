@@ -4,6 +4,9 @@ install:
 	uv sync
 	uv run pre-commit install
 
+load-docs:
+	uv run python -m scripts.doc_loader
+
 lint:
 	uv run ruff check
 

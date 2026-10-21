@@ -105,10 +105,14 @@ The container exposes port `7860`. A healthcheck verifies the service is running
 Place URLs in `scripts/source.txt` (one per line), then run:
 
 ```bash
-python scripts/doc_loader.py
+uv run python -m scripts.doc_loader
+# or
+make load-docs
 ```
 
-Documents are embedded and stored in Qdrant for retrieval.
+`doc_loader.py` loads its configuration from `.env` (or `.env.prod` when `prod=true`) and resolves `source.txt` relative to the script itself, so it can be run from anywhere in the repo. Documents are embedded and stored in Qdrant for retrieval.
+
+> **Warning:** the loader runs with `force_recreate=True` — it **deletes and rebuilds the target Qdrant collection from scratch**. Before running, make sure `QDRANT_URL` / `QDRANT_COLLECTION_NAME` point at the collection you intend to replace (defaults: `http://localhost:6333` / `su-ai-chatbot`). The embedding model is downloaded from Hugging Face on first run.
 
 ## Development
 
@@ -125,6 +129,7 @@ make format      # ruff format
 make typecheck   # pyright
 make test        # pytest
 make fix         # auto-fix lint/format issues
+make load-docs   # (re)build the Qdrant knowledge base from scripts/source.txt
 ```
 
 Pre-commit hooks run ruff (lint + format) and pyright on every commit.

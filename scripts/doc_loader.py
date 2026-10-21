@@ -1,13 +1,18 @@
-from SuAi.utils import constants, logging
-
 import re
+from pathlib import Path
 
-from bs4 import BeautifulSoup
-from langchain_community.document_loaders import RecursiveUrlLoader
-from langchain_community.document_transformers import EmbeddingsRedundantFilter
-from langchain_huggingface import HuggingFaceEmbeddings
-from langchain_qdrant import QdrantVectorStore
-from langchain_text_splitters import RecursiveCharacterTextSplitter
+from SuAi.utils.env import load_env
+
+load_env()
+
+from SuAi.utils import constants, logging  # noqa: E402
+
+from bs4 import BeautifulSoup  # noqa: E402
+from langchain_community.document_loaders import RecursiveUrlLoader  # noqa: E402
+from langchain_community.document_transformers import EmbeddingsRedundantFilter  # noqa: E402
+from langchain_huggingface import HuggingFaceEmbeddings  # noqa: E402
+from langchain_qdrant import QdrantVectorStore  # noqa: E402
+from langchain_text_splitters import RecursiveCharacterTextSplitter  # noqa: E402
 
 logger = logging.get_logger(__name__)
 
@@ -57,7 +62,8 @@ def main():
 
     logger.info("Loading web pages...")
 
-    with open("source.txt") as f:
+    source_file = Path(__file__).resolve().parent / "source.txt"
+    with source_file.open() as f:
         lines = f.read().splitlines()
 
     web_paths = map(
