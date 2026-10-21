@@ -209,7 +209,7 @@ def get_retriever(
     redundant_filter = EmbeddingsRedundantFilter(embeddings=embeddings)
     relevant_filter = EmbeddingsFilter(
         embeddings=embeddings,
-        similarity_threshold=0.5,
+        similarity_threshold=0.35,
         k=3,
     )
     pipeline_compressor = DocumentCompressorPipeline(
