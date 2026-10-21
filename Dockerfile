@@ -1,6 +1,6 @@
 FROM astral/uv:latest AS uv
 
-FROM nvidia/cuda:13.4.3-base-ubuntu26.04
+FROM nvidia/cuda:13.2.0-base-ubuntu24.04
 
 WORKDIR /app
 
