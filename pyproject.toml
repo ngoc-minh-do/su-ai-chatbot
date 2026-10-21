@@ -37,6 +37,12 @@ explicit = true
 [tool.uv.sources]
 llama-cpp-python = { index = "llama-cpp-python-wheel" }
 
+[tool.ruff.lint]
+# `SuAi` is a deliberately camelCase package name; Gradio UI callbacks
+# intentionally catch broad exceptions so a single failing handler doesn't
+# take down the interface.
+ignore = ["N999", "BLE001"]
+
 [dependency-groups]
 dev = [
     "pre-commit>=4.6.0",

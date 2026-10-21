@@ -1,9 +1,8 @@
 import logging
 import os
-from typing import Optional
 
 _log_level = os.environ.get("LOGLEVEL", logging.getLevelName(logging.WARNING)).upper()
-_default_handler: Optional[logging.Handler] = None
+_default_handler: logging.Handler | None = None
 
 
 def get_logger(name: str) -> logging.Logger:

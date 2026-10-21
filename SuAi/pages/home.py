@@ -145,7 +145,6 @@ def main():
 
         gr.ChatInterface(
             response_fn,
-            type="messages",
             save_history=True,
             additional_inputs=[model_selector],
         )

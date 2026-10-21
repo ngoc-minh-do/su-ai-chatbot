@@ -1,12 +1,14 @@
 import os
 
 from huggingface_hub import hf_hub_download
-from langchain.retrievers import ContextualCompressionRetriever
-from langchain.retrievers.document_compressors import (
+from langchain_classic.retrievers.contextual_compression import (
+    ContextualCompressionRetriever,
+)
+from langchain_classic.retrievers.document_compressors import (
     DocumentCompressorPipeline,
     EmbeddingsFilter,
 )
-from langchain.retrievers.multi_query import MultiQueryRetriever
+from langchain_classic.retrievers.multi_query import MultiQueryRetriever
 from langchain_community.document_transformers import EmbeddingsRedundantFilter
 from langchain_community.llms.llamacpp import LlamaCpp
 from langchain_core.documents import Document
@@ -33,7 +35,6 @@ _retriever: dict[str, ContextualCompressionRetriever] = {}
 
 
 def get_llm(selected_model: SelectedModel | None = None) -> BaseLanguageModel:
-    global _llm
     if selected_model is None:
         selected_model = settings.selected_model
     model_name = selected_model.name
@@ -98,14 +99,14 @@ def _load_huggingface_llm() -> BaseLLM:
     llm = HuggingFacePipeline.from_model_id(
         model_id=constants.huggingface_model_id,
         task="text-generation",
-        pipeline_kwargs=dict(
-            max_new_tokens=constants.max_tokens,
-            do_sample=True,
-            top_p=0.95,
-            temperature=constants.temperature,
-            repetition_penalty=1.05,
-            return_full_text=False,
-        ),
+        pipeline_kwargs={
+            "max_new_tokens": constants.max_tokens,
+            "do_sample": True,
+            "top_p": 0.95,
+            "temperature": constants.temperature,
+            "repetition_penalty": 1.05,
+            "return_full_text": False,
+        },
         device=constants.device,  # type: ignore[reportArgumentType]
         model_kwargs={"quantization_config": quantization_config},
     )
@@ -186,7 +187,6 @@ def get_random_docs() -> list[Document]:
 def get_retriever(
     vector_store: VectorStore, llm: BaseLanguageModel, key: str | None = None
 ) -> BaseRetriever:
-    global _retriever
     if key is None:
         key = settings.selected_model.name
 

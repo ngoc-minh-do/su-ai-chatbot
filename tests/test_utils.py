@@ -4,7 +4,6 @@ from SuAi.db.engine import _validate_identifier
 from SuAi.pages.training import extract_question_only
 from SuAi.utils.settings import SelectedModel
 
-
 # --- extract_question_only ---
 
 

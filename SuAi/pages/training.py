@@ -194,13 +194,12 @@ def render():
                 line_breaks=True,
             )
 
-        with gr.Row():
-            with gr.Column():
-                question = gr.Textbox(
-                    label="質問",
-                    lines=5,
-                    placeholder="ここに質問を入力するか、上のボタンを押して自動生成してください",
-                )
+        with gr.Row(), gr.Column():
+            question = gr.Textbox(
+                label="質問",
+                lines=5,
+                placeholder="ここに質問を入力するか、上のボタンを押して自動生成してください",
+            )
 
         with gr.Row():
             with gr.Column():

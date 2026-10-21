@@ -5,14 +5,14 @@ from SuAi.utils.env import load_env
 
 load_env()
 
-from SuAi.utils import constants, logging  # noqa: E402
+from bs4 import BeautifulSoup
+from langchain_community.document_loaders import RecursiveUrlLoader
+from langchain_community.document_transformers import EmbeddingsRedundantFilter
+from langchain_huggingface import HuggingFaceEmbeddings
+from langchain_qdrant import QdrantVectorStore
+from langchain_text_splitters import RecursiveCharacterTextSplitter
 
-from bs4 import BeautifulSoup  # noqa: E402
-from langchain_community.document_loaders import RecursiveUrlLoader  # noqa: E402
-from langchain_community.document_transformers import EmbeddingsRedundantFilter  # noqa: E402
-from langchain_huggingface import HuggingFaceEmbeddings  # noqa: E402
-from langchain_qdrant import QdrantVectorStore  # noqa: E402
-from langchain_text_splitters import RecursiveCharacterTextSplitter  # noqa: E402
+from SuAi.utils import constants, logging
 
 logger = logging.get_logger(__name__)
 
@@ -66,10 +66,7 @@ def main():
     with source_file.open() as f:
         lines = f.read().splitlines()
 
-    web_paths = map(
-        lambda x: {"url": x},
-        lines,
-    )
+    web_paths = ({"url": x} for x in lines)
 
     docs = []
     for web_path in web_paths:
