@@ -7,6 +7,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         curl \
         build-essential \
         cmake \
+        libpq-dev \
         pkg-config \
     && curl -LsSf https://astral.sh/uv/install.sh | sh \
     && rm -rf /var/lib/apt/lists/* /root/.cache
