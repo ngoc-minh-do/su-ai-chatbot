@@ -16,9 +16,9 @@ _chain: dict[str, RunnableSerializable] = {}
 
 # Qwen3-8B ChatML prompt (https://huggingface.co/Qwen/Qwen3-8B), matching the
 # model's embedded tokenizer.chat_template: "<|im_start|>system ... <|im_end|>"
-# then the user turn, then the generation prompt. The trailing empty think
-# tags (" thinking\n\n response\n\n") are the template's enable_thinking=false
-# form — they tell the model to skip reasoning and answer directly. The app
+# then the user turn, then a plain assistant generation prompt. The system
+# message asks for a direct answer (no reasoning); if the model emits a
+# " thinking ... response" block anyway, response_fn strips it. The app
 # drives llama.cpp via raw completion, so this string *is* the format; only
 # the llama_cpp backend runs Qwen3.
 _qwen_template = """<|im_start|>system
@@ -41,10 +41,6 @@ _qwen_template = """<|im_start|>system
 {question}
 <|im_end|>
 <|im_start|>assistant
- thinking
-
- response
-
 """
 
 _default_template = """

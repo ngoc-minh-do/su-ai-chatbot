@@ -63,12 +63,18 @@ model (japanese-stablelm-instruct-gamma-7b): its TheBloke GGUF has no embedded
 chat template, so llama.cpp fell back to llama-2 formatting and the model never
 sampled its EOS. **Resolution (applied):** the backend now runs
 **Qwen/Qwen3-8B-GGUF** (`Qwen3-8B-Q4_K_M.gguf`). `home.py` renders its native
-ChatML prompt — `<|im_start|>system` / `<|im_start|>user` turns plus the
-template's `enable_thinking=false` generation prompt
-(`<|im_start|>assistant\n thinking\n\n response\n\n` — empty think tags ask the
-model to answer directly without reasoning) — and `model.py` stops generation
-on `<|im_end|>` / `<|endoftext|>`. The `Using fallback chat format` notice
-should no longer appear; if it does, the deployed image predates the swap.
+ChatML prompt — `<|im_start|>system` / `<|im_start|>user` turns and a plain
+`<|im_start|>assistant` generation prompt; the system message asks for a direct
+answer and `response_fn` strips any ` thinking ... response` reasoning block.
+`model.py` stops generation on `<|im_end|>` / `<|endoftext|>`. The
+`Using fallback chat format` notice should no longer appear; if it does, the
+deployed image predates the swap.
+
+> Do **not** append the template's `enable_thinking=false` markers
+> (` thinking\n\n response\n\n`) to the generation prompt: Qwen3 tends to copy
+> the prompt tail and re-emit ` response`, producing stray text after the real
+> answer. A plain `<|im_start|>assistant\n` plus the system instruction and the
+> reasoning-block strip is cleaner.
 
 ## Performance: flash attention
 
