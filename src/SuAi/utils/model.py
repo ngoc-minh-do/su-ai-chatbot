@@ -64,9 +64,12 @@ def get_llm(selected_model: SelectedModel | None = None) -> BaseLanguageModel:
 
 
 def _load_ollama_llm() -> ChatOllama:
+    model_name = os.environ.get("OLLAMA_MODEL")
+    if model_name is None:
+        raise RuntimeError("OLLAMA_MODEL is not set")
     llm = ChatOllama(
         base_url=os.environ.get("OLLAMA_URL"),
-        model=os.environ.get("OLLAMA_MODEL"),  # type: ignore[reportArgumentType]
+        model=model_name,
         temperature=constants.temperature,
         num_predict=constants.max_tokens,
         num_gpu=10000,
@@ -77,10 +80,13 @@ def _load_ollama_llm() -> ChatOllama:
 
 
 def _load_openai_llm() -> ChatOpenAI:
+    model_name = os.environ.get("OPENAI_MODEL")
+    if model_name is None:
+        raise RuntimeError("OPENAI_MODEL is not set")
     llm = ChatOpenAI(
         base_url=os.environ.get("OPENAI_API_URL"),
-        api_key=os.environ.get("OPENAI_API_KEY"),  # type: ignore[reportArgumentType]
-        model=os.environ.get("OPENAI_MODEL"),  # type: ignore[reportArgumentType]
+        api_key=os.environ.get("OPENAI_API_KEY"),
+        model=model_name,
         temperature=constants.temperature,
         max_completion_tokens=constants.max_tokens,
     )
@@ -107,7 +113,7 @@ def _load_huggingface_llm() -> BaseLLM:
             "repetition_penalty": 1.05,
             "return_full_text": False,
         },
-        device=constants.device,  # type: ignore[reportArgumentType]
+        device=0 if constants.device.type == "cuda" else -1,
         model_kwargs={"quantization_config": quantization_config},
     )
 
@@ -121,7 +127,7 @@ def _load_llama_cpp_llm() -> BaseLLM:
 
     logger.info(f"Loading LlamaCpp model from {model_path}")
 
-    llm = LlamaCpp(  # type: ignore[reportCallIssue]
+    llm = LlamaCpp(
         model_path=model_path,
         n_gpu_layers=constants.n_gpu_layers,
         n_batch=512,

@@ -17,12 +17,12 @@ format-check:
 	uv run ruff format --check
 
 typecheck:
-	uv run pyright
+	uv run ty check
 
 test:
 	uv run pytest
 
-check: lint format-check test typecheck
+check: lint format-check typecheck test
 
 fix:
 	uv run ruff check --fix

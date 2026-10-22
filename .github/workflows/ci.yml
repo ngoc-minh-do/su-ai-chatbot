@@ -23,7 +23,7 @@ jobs:
       - name: Tests
         run: uv run pytest
       - name: Type check
-        run: uv run pyright
+        run: uv run ty check
 
   deploy:
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'

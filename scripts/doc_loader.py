@@ -71,6 +71,9 @@ def main():
     docs = []
     for web_path in web_paths:
         url = web_path.get("url")
+        if not isinstance(url, str) or not url.strip():
+            logger.warning("Skipping source entry without a valid URL: %s", web_path)
+            continue
         logger.info("Loading web page: %s", url)
 
         max_depth_raw = web_path.get("max_depth", 1)
@@ -79,8 +82,8 @@ def main():
         )
 
         loader = RecursiveUrlLoader(
-            url=url,  # type: ignore[reportArgumentType]
-            max_depth=max_depth,  # type: ignore[reportArgumentType]
+            url=url,
+            max_depth=max_depth,
             extractor=lambda html: bs4_extractor(seen_paras, html),
             exclude_dirs=web_path.get("exclude_dirs"),
         )
@@ -102,7 +105,7 @@ def main():
     #         f.write(doc.page_content)
 
     logger.info("Adding documents to the vector store...")
-    vector_store.add_documents(docs)  # type: ignore[reportArgumentType]
+    vector_store.add_documents(list(docs))
 
 
 if __name__ == "__main__":

@@ -126,13 +126,13 @@ make check
 # Individual commands
 make lint        # ruff check
 make format      # ruff format
-make typecheck   # pyright
+make typecheck   # ty
 make test        # pytest
 make fix         # auto-fix lint/format issues
 make load-docs   # (re)build the Qdrant knowledge base from scripts/source.txt
 ```
 
-Pre-commit hooks run ruff (lint + format) and pyright on every commit.
+Pre-commit hooks run ruff (lint + format), ty (type checking), and uv-lock (keeps `uv.lock` in sync) on every commit.
 
 ## Project Structure
 
