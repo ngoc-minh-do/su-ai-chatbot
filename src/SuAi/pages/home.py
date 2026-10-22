@@ -1,4 +1,5 @@
 import re
+import time
 
 import gradio as gr
 from langchain_core.output_parsers import StrOutputParser
@@ -89,6 +90,7 @@ def response_fn(message, history, selected_model):
     yield "回答を生成中..."
     logger.info(f"Generating response for message: {message}")
 
+    start = time.perf_counter()
     try:
         if constants.stream:
             buffer = ""
@@ -112,10 +114,35 @@ def response_fn(message, history, selected_model):
                     yield cleaned_buffer
                     break
         else:
-            yield rag_chain.invoke(message)
+            buffer = rag_chain.invoke(message)
+            yield buffer
     except Exception as e:
         logger.error(f"Error generating response: {e}")
         yield f"回答の生成中にエラーが発生しました: {e}"
+        return
+
+    _log_response_stats(model_enum, buffer, time.perf_counter() - start)
+
+
+def _log_response_stats(model_enum: SelectedModel, text: str, elapsed: float) -> None:
+    """Log one per-response performance line at INFO level."""
+    n_chars = len(text)
+    n_tokens = model.get_eval_token_count(model_enum.name)
+    if n_tokens is not None:
+        logger.info(
+            "Generated %d tokens in %.2fs = %.1f tok/s (%d chars)",
+            n_tokens,
+            elapsed,
+            n_tokens / elapsed,
+            n_chars,
+        )
+    else:
+        logger.info(
+            "Generated %d chars in %.2fs = %.1f chars/s",
+            n_chars,
+            elapsed,
+            n_chars / elapsed,
+        )
 
 
 def model_change(value):

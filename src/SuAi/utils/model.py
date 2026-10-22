@@ -63,6 +63,21 @@ def get_llm(selected_model: SelectedModel | None = None) -> BaseLanguageModel:
     return _llm[model_name]
 
 
+def get_eval_token_count(model_name: str) -> int | None:
+    """Tokens evaluated in the last generation, if the backend reports them.
+
+    llama-cpp-python keeps the eval counter on the underlying client; other
+    backends (OpenAI, Ollama, HF) do not expose one here and return None.
+    Note: the count includes prompt-processing tokens, not just completion.
+    """
+    llm = _llm.get(model_name)
+    client = getattr(llm, "client", None)
+    n_tokens = getattr(client, "n_tokens", None)
+    if isinstance(n_tokens, int):
+        return n_tokens
+    return None
+
+
 def _load_ollama_llm() -> ChatOllama:
     model_name = os.environ.get("OLLAMA_MODEL")
     if model_name is None:

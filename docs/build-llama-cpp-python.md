@@ -65,6 +65,9 @@ Without it, every generated token pays a full `O(ctx)` attention pass — at
 
 After a redeploy the startup log must show **`flash_attn = 1`**; token timing
 lines (`t/tok`, `ms/tok`) appear in the app log because the langchain wrapper
-runs with `verbose=True`. If decode is still slow at longer contexts, lowering
-`CONTEXT_WINDOW` to 4096 (~half the KV cache) is the next lever — this bot's
-RAG answers are short, so 8192 is usually more than needed.
+runs with `verbose=True`. The app also logs one per-response line in the
+normal `SuAi.*` format: `Generated N tokens in X.XXs = Y.Y tok/s (Z chars)`
+(N = total eval tokens including prompt processing). If decode is still slow at
+longer contexts, lowering `CONTEXT_WINDOW` to 4096 (~half the KV cache) is the
+next lever — this bot's RAG answers are short, so 8192 is usually more than
+needed.
