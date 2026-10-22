@@ -6,6 +6,7 @@ services:
       context: .
     image: su-ai-chatbot
     container_name: su-ai-chatbot
+    init: true
     networks:
       - reverse-proxy
     volumes:
