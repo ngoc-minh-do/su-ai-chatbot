@@ -13,7 +13,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # Copy uv binary from the official image (no curl-based install needed)
 COPY --from=uv /uv /usr/local/bin/uv
 
-ENV GGML_CUDA_ENABLE_UNIFIED_MEMORY=1
+# Disable CUDA graph replay: on consumer GPUs (RTX 3060) graph capture/splits
+# stall generation midway (log: "CUDA Graph id N reused" spam then hang).
+# GGML_CUDA_ENABLE_UNIFIED_MEMORY was a source-build flag from the prebuilt-wheel
+# era; keeping it at runtime only reserved VRAM and is not needed.
+ENV GGML_CUDA_DISABLE_GRAPHS=1
 ENV LIBRARY_PATH=/usr/lib/x86_64-linux-gnu:$LIBRARY_PATH
 ENV LD_LIBRARY_PATH=/usr/lib/x86_64-linux-gnu:$LD_LIBRARY_PATH
 

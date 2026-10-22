@@ -38,6 +38,7 @@ jobs:
       - name: Write env file
         run: |
           cat > .env.prod <<'EOF'
+          SELECTED_MODEL=openai
           DATA_DIR="/su-ai-chatbot"
           HF_HOME="${DATA_DIR}/huggingface"
           HF_HUB_CACHE="${HF_HOME}/hub"
@@ -52,6 +53,13 @@ jobs:
           OLLAMA_MODEL=${{ vars.OLLAMA_MODEL }}
           QDRANT_URL=${{ vars.QDRANT_URL }}
           DATABASE_URL=${{ secrets.DATABASE_URL }}
+          GGML_CUDA_DISABLE_GRAPHS=1
+          MAX_TOKENS=1024
+          TEMPERATURE=0.8
+          CONTEXT_WINDOW=8192
+          N_GPU_LAYERS=32
+          N_BATCH=256
+          STREAM=true
           EOF
       - name: Deploy
         run: |

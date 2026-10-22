@@ -1,91 +1,56 @@
-# Building a CUDA-enabled Wheel (`.whl`) for `llama-cpp-python`
+# Llama.cpp on CUDA: wheel, knobs, and troubleshooting
 
-## 1. Prepare GPU-enabled Environment
+## How the CUDA-enabled wheel is provided
 
-Make sure you have:
+The project uses the **prebuilt** `llama-cpp-python` CUDA wheel — there is no
+from-source build anymore.
 
-- NVIDIA GPU + driver
-- CUDA Toolkit installed (e.g., 12.8)
-- Python 3.13
-- Build tools: `cmake`, `build-essential`, `pkg-config`
+- `pyproject.toml` points uv at a dedicated wheel index:
+  `llama-cpp-python-wheel` → `https://abetlen.github.io/llama-cpp-python/whl/cu132`
+- `uv.lock` pins the exact wheel version (currently `0.3.36`, built for CUDA 13.2)
+- The Dockerfile installs it with a plain `uv sync --frozen` on an
+  `nvidia/cuda:13.2.0-base-ubuntu24.04` base image — no `cmake`/CUDA Toolkit needed
 
-> Recommended: use a GPU Docker container:
-
-```bash
-docker run --rm --gpus all -it -v /docker/su-ai-chat/build:/dist -w /dist nvidia/cuda:12.8.1-devel-ubuntu24.04 bash
-```
-
----
-
-## 2. Install Python Dependencies
-
-Inside the container:
+To move to another CUDA version, change the index URL (e.g. `cu124`, `cu121`)
+and refresh the lock:
 
 ```bash
-apt update -y
-apt install -y \
-    software-properties-common
-
-add-apt-repository ppa:deadsnakes/ppa
-
-apt install -y \
-    python3.13 python3.13-dev curl build-essential cmake pkg-config git
-
-curl -sS https://bootstrap.pypa.io/get-pip.py | python3.13
-
-python3.13 -m pip install --upgrade pip setuptools wheel build
+uv lock --upgrade llama-cpp-python
+uv sync
 ```
 
----
+## Runtime knobs
 
-## 3. Clone `llama-cpp-python`
+| Variable | Default | Effect |
+|---|---|---|
+| `N_GPU_LAYERS` | 32 | Transformer layers offloaded to GPU; `32` = full offload for a 32-layer model (`-1` = everything incl. embeddings/output) |
+| `N_BATCH` | 256 | Prompt-processing (prefill) batch size. Larger = faster prefill but more VRAM; decode is always 1 token at a time |
+| `CONTEXT_WINDOW` | 8192 | Context length in tokens |
+| `GGML_CUDA_DISABLE_GRAPHS` | 1 | Keeps llama.cpp CUDA graph capture/replay off (see below) |
 
-```bash
-git clone --recursive https://github.com/abetlen/llama-cpp-python.git
-cd llama-cpp-python
-```
+## Troubleshooting: generation hangs with `CUDA Graph id N reused`
 
-- `--recursive` ensures submodules (like `llama.cpp`) are cloned.
+**Symptom:** the app starts generating ("Generating response…"), the log spams
+`CUDA Graph id N reused` (sometimes with `CUDA graph warmup reset` /
+`CUDA graph warmup complete`), then stalls indefinitely — Gradio shows a spinner
+forever.
 
----
+**Cause:** on consumer NVIDIA GPUs (e.g. RTX 3060/Ampere), CUDA graph
+capture/replay — especially with partial CPU/GPU offload, which fragments the
+graph (`splits = 145` in `sched_reserve` logs) — can stall mid-generation.
 
-## 4. Set CUDA Build Environment
+**Fix (already applied in this repo):**
 
-```bash
-export CMAKE_ARGS="-DGGML_CUDA=ON -DGGML_CUDA_ENABLE_UNIFIED_MEMORY=1"
-export GGML_CUDA_ENABLE_UNIFIED_MEMORY=1
-export LIBRARY_PATH=/usr/lib/x86_64-linux-gnu:$LIBRARY_PATH
-export LD_LIBRARY_PATH=/usr/lib/x86_64-linux-gnu:$LD_LIBRARY_PATH
-```
+1. `GGML_CUDA_DISABLE_GRAPHS=1` — set in the `Dockerfile` `ENV` and in
+   `.env.prod`. Runtime-only, no wheel rebuild needed; the shipped
+   `libggml-cuda.so` reads it (symbol `disable_cuda_graphs_due_to_env`).
+2. `N_GPU_LAYERS=32` — full offload removes the CPU↔GPU split, collapsing the
+   graph/`split` count (~2) and eliminating per-token host copies.
 
----
+**Verify:** after redeploying, the log must contain **no** `CUDA Graph` lines at
+all — the banner still prints `USE_GRAPHS = 1`, but that is a compile-time
+attribute of the wheel and is not a runtime toggle.
 
-## 5. Build the Wheel
-
-```bash
-python3.13 -m build --wheel
-```
-
-- Generates `.whl` in `dist/` folder.
-- Uses `pyproject.toml` and modern PEP 517 build system.
-- Compiles `libggml-cuda.so` for CUDA support.
-
----
-
-## 6. Install and Test
-
-```bash
-pip install dist/llama_cpp_python-*.whl
-python3.13 -c "from llama_cpp import Llama; print(Llama().get_device())"
-```
-
-- Should detect a CUDA-enabled GPU.
-
----
-
-## 7. Notes / Tips
-
-- Building **requires GPU libraries**; cannot link CUDA fully with stubs only.
-- Environment variables like `CMAKE_ARGS` are critical for CUDA backend.
-- Use a **GPU container or GPU-enabled host** to avoid linker errors.
-- `.whl` can be reused in Docker runtime images or private PyPI.
+> Do **not** enable `GGML_CUDA_ENABLE_UNIFIED_MEMORY=1` — it was a leftover CMake
+> build flag from the from-source era. At runtime it only reserves VRAM and
+> contributes to the graph-related stalls above.

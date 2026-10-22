@@ -71,7 +71,7 @@ The Gradio interface opens at `http://localhost:7860`.
 | OpenAI / LiteLLM | `OPENAI_API_KEY`, `OPENAI_API_URL`, `OPENAI_MODEL` | No |
 | Ollama | `OLLAMA_URL`, `OLLAMA_MODEL` | Optional |
 | HuggingFace | `HF_TOKEN` (for gated models) | Yes |
-| Llama.cpp | `HF_TOKEN` (for model download) | Yes |
+| Llama.cpp | `HF_TOKEN` (for model download), `N_GPU_LAYERS`, `N_BATCH` | Yes |
 
 Set `SELECTED_MODEL=openai` (or `ollama`, `huggingface`, `llama_cpp`) in your `.env` to choose the default backend. You can also switch models at runtime via the dropdown in the UI.
 
@@ -92,6 +92,10 @@ See [`.env.example`](.env.example) for the full list. Key variables:
 | `HF_TOKEN` | HuggingFace token for gated models |
 | `MAX_TOKENS` | Max output tokens (default: 1024) |
 | `TEMPERATURE` | Generation temperature (default: 0.8) |
+| `CONTEXT_WINDOW` | Context length in tokens (default: 8192) |
+| `N_GPU_LAYERS` | Llama.cpp layers offloaded to GPU, 32 = full offload (default: 32) |
+| `N_BATCH` | Llama.cpp prompt-processing batch size (default: 256) |
+| `GGML_CUDA_DISABLE_GRAPHS` | Keep llama.cpp CUDA graphs off to avoid stalls on consumer GPUs |
 | `STREAM` | Enable streaming (default: true) |
 | `QUERY_ENHANCEMENT` | Enable MultiQueryRetriever (default: false) |
 
@@ -105,6 +109,11 @@ docker compose up -d
 ```
 
 The container exposes port `7860`. A healthcheck verifies the service is running.
+
+CUDA graphs are disabled in the image (`GGML_CUDA_DISABLE_GRAPHS=1`) and the
+Llama.cpp backend defaults to full GPU offload (`N_GPU_LAYERS=32`) — graph
+capture/replay can stall generation on consumer GPUs. See
+[docs/build-llama-cpp-python.md](docs/build-llama-cpp-python.md) for details.
 
 ## Loading Documents
 
@@ -165,7 +174,7 @@ su-ai-chatbot/
 ├── tests/
 │   └── test_utils.py        # Unit tests
 ├── docs/
-│   └── build-llama-cpp-python.md  # CUDA wheel build guide
+│   └── build-llama-cpp-python.md  # Llama.cpp CUDA wheel, knobs & troubleshooting
 ├── main.py                  # Entry point
 ├── Dockerfile
 ├── docker-compose.yaml

@@ -130,7 +130,7 @@ def _load_llama_cpp_llm() -> BaseLLM:
     llm = LlamaCpp(
         model_path=model_path,
         n_gpu_layers=constants.n_gpu_layers,
-        n_batch=512,
+        n_batch=constants.n_batch,
         n_ctx=constants.context_window,
         max_tokens=constants.max_tokens,
         temperature=constants.temperature,
