@@ -134,6 +134,10 @@ def _load_llama_cpp_llm() -> BaseLLM:
         n_ctx=constants.context_window,
         max_tokens=constants.max_tokens,
         temperature=constants.temperature,
+        # llama-cpp-python defaults flash attention to OFF; without it, every
+        # token does a full O(ctx) attention pass (slow at 8k context, esp.
+        # with other GPU workloads sharing the card). FA is exact, not approx.
+        model_kwargs={"flash_attn": True},
     )
 
     return llm

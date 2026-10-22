@@ -54,3 +54,17 @@ attribute of the wheel and is not a runtime toggle.
 > Do **not** enable `GGML_CUDA_ENABLE_UNIFIED_MEMORY=1` — it was a leftover CMake
 > build flag from the from-source era. At runtime it only reserves VRAM and
 > contributes to the graph-related stalls above.
+
+## Performance: flash attention
+
+The backend enables flash attention (`model_kwargs={"flash_attn": True}` in
+`src/SuAi/utils/model.py`) because llama-cpp-python ships it **off by default**.
+Without it, every generated token pays a full `O(ctx)` attention pass — at
+`CONTEXT_WINDOW=8192` this dominates decode latency (your log would show
+`llama_context: flash_attn = disabled`).
+
+After a redeploy the startup log must show **`flash_attn = 1`**; token timing
+lines (`t/tok`, `ms/tok`) appear in the app log because the langchain wrapper
+runs with `verbose=True`. If decode is still slow at longer contexts, lowering
+`CONTEXT_WINDOW` to 4096 (~half the KV cache) is the next lever — this bot's
+RAG answers are short, so 8192 is usually more than needed.
