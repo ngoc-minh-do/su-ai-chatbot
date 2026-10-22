@@ -29,6 +29,10 @@ dependencies = [
     "transformers>=4.55.0",
 ]
 
+[build-system]
+requires = ["uv_build>=0.0,<0.14"]
+build-backend = "uv_build"
+
 [[tool.uv.index]]
 name = "llama-cpp-python-wheel"
 url = "https://abetlen.github.io/llama-cpp-python/whl/cu132"
@@ -36,6 +40,9 @@ explicit = true
 
 [tool.uv.sources]
 llama-cpp-python = { index = "llama-cpp-python-wheel" }
+
+[tool.uv.build-backend]
+module-name = "SuAi"
 
 [tool.ruff.lint]
 # `SuAi` is a deliberately camelCase package name; Gradio UI callbacks

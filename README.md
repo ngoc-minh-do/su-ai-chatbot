@@ -138,21 +138,22 @@ Pre-commit hooks run ruff (lint + format) and pyright on every commit.
 
 ```
 su-ai-chatbot/
-├── SuAi/
-│   ├── pages/
-│   │   ├── home.py          # Main chatbot UI + RAG chain
-│   │   └── training.py      # QA pair generation UI
-│   ├── db/
-│   │   ├── engine.py        # PostgreSQL connection
-│   │   ├── models.py        # SQLAlchemy models
-│   │   ├── operations.py    # CRUD operations
-│   │   └── utils.py         # DB management helpers
-│   └── utils/
-│       ├── constants.py     # Hardcoded model IDs + env fallbacks
-│       ├── env.py           # Environment loader
-│       ├── logging.py       # Logger setup
-│       ├── model.py         # LLM/embedding/retriever factory
-│       └── settings.py      # SelectedModel enum
+├── src/
+│   └── SuAi/
+│       ├── pages/
+│       │   ├── home.py          # Main chatbot UI + RAG chain
+│       │   └── training.py      # QA pair generation UI
+│       ├── db/
+│       │   ├── engine.py        # PostgreSQL connection
+│       │   ├── models.py        # SQLAlchemy models
+│       │   ├── operations.py    # CRUD operations
+│       │   └── utils.py         # DB management helpers
+│       └── utils/
+│           ├── constants.py     # Hardcoded model IDs + env fallbacks
+│           ├── env.py           # Environment loader
+│           ├── logging.py       # Logger setup
+│           ├── model.py         # LLM/embedding/retriever factory
+│           └── settings.py      # SelectedModel enum
 ├── scripts/
 │   └── doc_loader.py        # Web scraper → Qdrant ingestion
 ├── tests/

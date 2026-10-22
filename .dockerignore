@@ -1,22 +1,42 @@
+# Git metadata
+.git
+.gitignore
+.github
+
+# Python caches and tooling
 .venv
 __pycache__
+*.py[cod]
+*.egg-info/
 .ruff_cache
 .pytest_cache
-.git
-.github
-github-runner
-docs
-tests
-*.log
-*.csv
-*.md
-node_modules
+.pyright_cache
+
+# Environment files (secrets must never be baked into the image)
 .env
 .env.prod
+.env.example
+
+# Logs and data artifacts
+*.log
+*.csv
+
+# Node (not used, but keep excluded)
+node_modules
+
+# Repo-level tooling files (not needed in the image)
+.dockerignore
+.pre-commit-config.yaml
+.python-version
+
+# Dev-only files and tooling
+tests
+docs
 Makefile
 deploy.sh
 local-install.sh
-.dockerignore
-.gitignore
-.pre-commit-config.yaml
-.python-version
+docker-compose.yaml
+github-runner
+
+# NOTE: `*.md` is intentionally NOT excluded. README.md is referenced by
+# `project.readme` and is required for the uv_build wheel build in the Dockerfile.
