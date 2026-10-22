@@ -73,7 +73,7 @@ The Gradio interface opens at `http://localhost:7860`.
 | HuggingFace | `HF_TOKEN` (for gated models) | Yes |
 | Llama.cpp | `HF_TOKEN` (for model download), `N_GPU_LAYERS`, `N_BATCH` | Yes |
 
-Set `SELECTED_MODEL=openai` (or `ollama`, `huggingface`, `llama_cpp`) in your `.env` to choose the default backend. You can also switch models at runtime via the dropdown in the UI.
+Set `SELECTED_MODEL=openai` (or `ollama`, `huggingface`, `llama_cpp`) in your `.env` to choose the default backend. You can also switch models at runtime via the dropdown in the UI. Ollama models that are missing on the server are pulled automatically on first use (`/api/pull`), so no manual `ollama pull` is required.
 
 ## Environment Variables
 

@@ -1,4 +1,6 @@
+import json
 import os
+import urllib.request
 
 from huggingface_hub import hf_hub_download
 from langchain_classic.retrievers.contextual_compression import (
@@ -78,12 +80,55 @@ def get_eval_token_count(model_name: str) -> int | None:
     return None
 
 
+def _ensure_ollama_model(model_name: str, base_url: str) -> None:
+    """Pull the model from Ollama's registry if it is not already local.
+
+    Ollama's /api/generate and /api/chat return 404 for missing models and
+    never pull implicitly, so the app pre-pulls on first use. Failures are
+    logged and swallowed — the subsequent request surfaces the server error.
+    """
+    normalized = model_name if ":" in model_name else f"{model_name}:latest"
+
+    def local_names() -> set[str]:
+        try:
+            with urllib.request.urlopen(f"{base_url}/api/tags", timeout=10) as resp:
+                return {
+                    m.get("name", "")
+                    for m in json.loads(resp.read().decode()).get("models", [])
+                }
+        except Exception as e:
+            logger.warning(f"Could not list Ollama models from {base_url}: {e}")
+            return set()
+
+    names = local_names()
+    if not names or model_name in names or normalized in names:
+        return
+
+    logger.info(f"Ollama model '{model_name}' not found locally, pulling...")
+    try:
+        req = urllib.request.Request(
+            f"{base_url}/api/pull",
+            data=json.dumps({"model": model_name, "stream": False}).encode(),
+            headers={"Content-Type": "application/json"},
+            method="POST",
+        )
+        with urllib.request.urlopen(req, timeout=600) as resp:
+            result = json.loads(resp.read().decode())
+        logger.info(f"Ollama pull finished: {result.get('status')}")
+    except Exception as e:
+        logger.error(f"Ollama pull failed for '{model_name}': {e}")
+
+
 def _load_ollama_llm() -> ChatOllama:
     model_name = os.environ.get("OLLAMA_MODEL")
     if model_name is None:
         raise RuntimeError("OLLAMA_MODEL is not set")
+    base_url = os.environ.get("OLLAMA_URL", "http://localhost:11434")
+
+    _ensure_ollama_model(model_name, base_url)
+
     llm = ChatOllama(
-        base_url=os.environ.get("OLLAMA_URL"),
+        base_url=base_url,
         model=model_name,
         temperature=constants.temperature,
         num_predict=constants.max_tokens,
