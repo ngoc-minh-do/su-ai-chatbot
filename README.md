@@ -2,6 +2,12 @@
 
 AI-powered Japanese-language assistant for the [Sharefull Shift](https://sharefullshift.com/) service, built with RAG (Retrieval-Augmented Generation), Gradio UI, and multi-model support.
 
+[![CI](https://github.com/ngoc-minh-do/su-ai-chatbot/actions/workflows/ci.yml/badge.svg)](https://github.com/ngoc-minh-do/su-ai-chatbot/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![Python](https://img.shields.io/badge/python-3.13-blue.svg)](.python-version)
+
+**Status:** production — actively maintained, deployed via Docker with NVIDIA GPU support.
+
 ## Features
 
 - **RAG chatbot** for the Sharefull Shift platform — answers questions about shift scheduling, creation, editing, and management
@@ -165,6 +171,14 @@ su-ai-chatbot/
 ├── docker-compose.yaml
 └── Makefile
 ```
+
+## Known Limitations
+
+- **Answers are limited to the loaded documents** — the RAG chain only knows what's in the Qdrant collection. Keep `scripts/source.txt` current and rebuild the collection (`make load-docs`) whenever the source docs change.
+- **Potential hallucinations** — as with any LLM, responses can be inaccurate or invented. The bot is a support assistant, not a substitute for official documentation or human judgment.
+- **Japanese-first** — prompts, training data, and the UI are in Japanese; responses are most reliable in Japanese.
+- **Local models are resource-heavy** — the Llama.cpp and HuggingFace backends need a GPU with enough VRAM and download several GB on first load.
+- **Destructive document loader** — `make load-docs` force-recreates the Qdrant collection, deleting existing vectors.
 
 ## License
 
