@@ -57,3 +57,7 @@ dev = [
     "ruff>=0.12.8",
     "ty>=0.0.90",
 ]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = ["--strict-markers"]

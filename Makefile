@@ -1,4 +1,4 @@
-.PHONY: install lint format format-check typecheck test check fix clean
+.PHONY: install lint format format-check typecheck test check fix audit clean
 
 install:
 	uv sync
@@ -28,6 +28,9 @@ fix:
 	uv run ruff check --fix
 	uv run ruff format
 
+audit:
+	uv audit
+
 clean:
 	find . -type d -name __pycache__ -exec rm -rf {} +
-	rm -rf .ruff_cache .pyright_cache
+	rm -rf .ruff_cache .pytest_cache
