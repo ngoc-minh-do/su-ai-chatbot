@@ -19,7 +19,7 @@ db_connection_string = os.environ.get("DATABASE_URL", "")
 max_tokens = int(os.environ.get("MAX_TOKENS", "1024"))
 temperature = float(os.environ.get("TEMPERATURE", "0.8"))
 context_window = int(os.environ.get("CONTEXT_WINDOW", "8192"))
-n_gpu_layers = int(os.environ.get("N_GPU_LAYERS", "32"))
+n_gpu_layers = int(os.environ.get("N_GPU_LAYERS", "-1"))
 n_batch = int(os.environ.get("N_BATCH", "256"))
 stream = os.environ.get("STREAM", "true").lower() == "true"
 

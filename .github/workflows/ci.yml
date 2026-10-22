@@ -57,7 +57,7 @@ jobs:
           MAX_TOKENS=1024
           TEMPERATURE=0.8
           CONTEXT_WINDOW=8192
-          N_GPU_LAYERS=32
+          N_GPU_LAYERS=-1
           N_BATCH=256
           STREAM=true
           EOF

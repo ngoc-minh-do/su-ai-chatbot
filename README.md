@@ -93,7 +93,7 @@ See [`.env.example`](.env.example) for the full list. Key variables:
 | `MAX_TOKENS` | Max output tokens (default: 1024) |
 | `TEMPERATURE` | Generation temperature (default: 0.8) |
 | `CONTEXT_WINDOW` | Context length in tokens (default: 8192) |
-| `N_GPU_LAYERS` | Llama.cpp layers offloaded to GPU, 32 = full offload (default: 32) |
+| `N_GPU_LAYERS` | Llama.cpp layers offloaded to GPU; `-1` (default) = all layers incl. embeddings/output. `32` = all 32 blocks but leaves block 0 on CPU, which slows decode |
 | `N_BATCH` | Llama.cpp prompt-processing batch size (default: 256) |
 | `GGML_CUDA_DISABLE_GRAPHS` | Keep llama.cpp CUDA graphs off to avoid stalls on consumer GPUs |
 | `STREAM` | Enable streaming (default: true) |

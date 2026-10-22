@@ -23,7 +23,7 @@ uv sync
 
 | Variable | Default | Effect |
 |---|---|---|
-| `N_GPU_LAYERS` | 32 | Transformer layers offloaded to GPU; `32` = full offload for a 32-layer model (`-1` = everything incl. embeddings/output) |
+| `N_GPU_LAYERS` | -1 | Layers offloaded to GPU. `-1` (default) = everything incl. embeddings/output; any positive N counts the output layer, so `32` for a 32-block model still leaves block 0 on CPU (per-token CPU/GPU split, slow decode) |
 | `N_BATCH` | 256 | Prompt-processing (prefill) batch size. Larger = faster prefill but more VRAM; decode is always 1 token at a time |
 | `CONTEXT_WINDOW` | 8192 | Context length in tokens |
 | `GGML_CUDA_DISABLE_GRAPHS` | 1 | Keeps llama.cpp CUDA graph capture/replay off (see below) |
@@ -62,6 +62,18 @@ The backend enables flash attention (`model_kwargs={"flash_attn": True}` in
 Without it, every generated token pays a full `O(ctx)` attention pass — at
 `CONTEXT_WINDOW=8192` this dominates decode latency (your log would show
 `llama_context: flash_attn = disabled`).
+
+## Performance: layer placement (`N_GPU_LAYERS=-1`)
+
+_decode running at ~4 tok/s on an RTX 3060 despite full "offload"* — the usual
+cause is that a positive `N_GPU_LAYERS` counts the **output layer** as one of
+the layers: with `N_GPU_LAYERS=32` on a 32-block model, the load log shows
+`offloaded 32/33 layers to GPU` and block 0 (plus its KV cache) stays on CPU.
+Every generated token then crosses a CPU↔GPU split, and with many CPU threads
+the per-token threadpool sync dominates (llama.cpp's own perf guide: extremely
+slow generation → lower `-t`). Set `N_GPU_LAYERS=-1` so the log reads
+`offloaded 33/33 layers to GPU` (single-split decode graph). If it is still
+slow, lowering the CPU thread count also helps while any layer remains on CPU.
 
 After a redeploy the startup log must show **`flash_attn = 1`**; token timing
 lines (`t/tok`, `ms/tok`) appear in the app log because the langchain wrapper
