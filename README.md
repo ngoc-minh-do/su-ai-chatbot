@@ -113,7 +113,7 @@ The container exposes port `7860`. A healthcheck verifies the service is running
 CUDA graphs are disabled in the image (`GGML_CUDA_DISABLE_GRAPHS=1`) and the
 Llama.cpp backend defaults to full GPU offload (`N_GPU_LAYERS=32`) — graph
 capture/replay can stall generation on consumer GPUs. See
-[docs/build-llama-cpp-python.md](docs/build-llama-cpp-python.md) for details.
+[docs/llama-cpp-cuda.md](docs/llama-cpp-cuda.md) for details.
 
 ## Loading Documents
 
@@ -174,7 +174,7 @@ su-ai-chatbot/
 ├── tests/
 │   └── test_utils.py        # Unit tests
 ├── docs/
-│   └── build-llama-cpp-python.md  # Llama.cpp CUDA wheel, knobs & troubleshooting
+│   └── llama-cpp-cuda.md             # Llama.cpp CUDA wheel, knobs & troubleshooting
 ├── main.py                  # Entry point
 ├── Dockerfile
 ├── docker-compose.yaml
