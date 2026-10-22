@@ -55,6 +55,20 @@ attribute of the wheel and is not a runtime toggle.
 > build flag from the from-source era. At runtime it only reserves VRAM and
 > contributes to the graph-related stalls above.
 
+## Troubleshooting: the model echoes the prompt and never stops
+
+**Symptom:** the llama_cpp response is hundreds of tokens of the prompt itself
+re-printed (the log shows `Using fallback chat format: llama-2` and the eval
+time runs until `max_tokens`, e.g. 1023 runs). **Cause:** Japanese-StableLM
+Instruct Gamma needs its **native** template — preamble
+`「以下は、タスクを説明する命令です。…」` + `### 命令:` / `### 入力:` /
+`### 応答:` + `</s>` EOS — but TheBloke's GGUF has no embedded chat template,
+so llama.cpp falls back to llama-2. **Fix (applied in this repo):**
+`home.py` renders the gamma-native prompt for the `llama_cpp` backend, and
+`model.py` passes `stop=["</s>"]` as a termination safety net. The
+`Using fallback chat format` notice at model load is harmless — the app
+drives raw completion, not llama.cpp chat formatting.
+
 ## Performance: flash attention
 
 The backend enables flash attention (`model_kwargs={"flash_attn": True}` in

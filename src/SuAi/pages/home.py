@@ -14,21 +14,37 @@ logger = logging.get_logger(__name__)
 
 _chain: dict[str, RunnableSerializable] = {}
 
+# Japanese-StableLM-Instruct-Gamma-7B native chat format
+# (https://huggingface.co/stabilityai/japanese-stablelm-instruct-gamma-7b):
+# preamble -> system -> "### 命令:" -> "### 入力:" -> "### 応答:", terminated
+# by "</s>". Using any other layout makes the model echo the prompt and never
+# hit EOS. Only the llama_cpp backend runs this model.
+_gamma_template = """
+「以下は、タスクを説明する命令です。要求を適切に満たす応答を書きなさい。」
 
-def create_rag_chain(selected_model: SelectedModel) -> RunnableSerializable:
-    model_name = selected_model.name
+あなたはシェアフルシフトのAIアシスタントです。シェアフルシフトは、ユーザーが勤務シフトを作成・管理するためのプラットフォームです。あなたの役割は、ユーザーがシステムを効果的に使えるようにサポートし、質問に答え、シフトスケジュールの管理を手助けすることです。
 
-    if _chain.get(model_name) is not None:
-        logger.info(f"RAG chain '{model_name}' already cached, reusing.")
-        return _chain[model_name]
+あなたが行うべきこと:
+- シフトの作成、編集、キャンセル、割り当て方法の説明
+- シフトスケジュールの確認方法や通知機能の使い方の案内
+- よくある問題（例：シフトの重複、スケジュールが表示されない等）のサポート
+- やさしく、丁寧で、分かりやすい言葉遣いで対応すること
 
-    logger.info(f"Creating RAG chain for '{selected_model.value}'...")
+ユーザーの質問があいまいな場合は、わからないと伝えてください。
 
-    llm = model.get_llm(selected_model)
-    vector_store = model.get_vector_store()
-    retriever = model.get_retriever(vector_store, llm=llm, key=model_name)
+### 命令:
+以下のコンテキストを参考にして、ユーザーの質問に簡潔かつ正確に答えてください。コンテキストに該当する情報がない場合は、その旨を正直に伝えてください。
 
-    template = """
+コンテキスト:
+{context}
+
+### 入力:
+{question}
+
+### 応答:
+"""
+
+_default_template = """
 ### 命令:
 あなたはシェアフルシフトのAIアシスタントです。シェアフルシフトは、ユーザーが勤務シフトを作成・管理するためのプラットフォームです。あなたの役割は、ユーザーがシステムを効果的に使えるようにサポートし、質問に答え、シフトスケジュールの管理を手助けすることです。
 
@@ -47,6 +63,25 @@ def create_rag_chain(selected_model: SelectedModel) -> RunnableSerializable:
 
 ### アシスタントの返答:
 """
+
+
+def create_rag_chain(selected_model: SelectedModel) -> RunnableSerializable:
+    model_name = selected_model.name
+
+    if _chain.get(model_name) is not None:
+        logger.info(f"RAG chain '{model_name}' already cached, reusing.")
+        return _chain[model_name]
+
+    logger.info(f"Creating RAG chain for '{selected_model.value}'...")
+
+    llm = model.get_llm(selected_model)
+    vector_store = model.get_vector_store()
+    retriever = model.get_retriever(vector_store, llm=llm, key=model_name)
+
+    if selected_model == SelectedModel.llama_cpp:
+        template = _gamma_template
+    else:
+        template = _default_template
     prompt = PromptTemplate.from_template(template)
 
     rag_chain = (
