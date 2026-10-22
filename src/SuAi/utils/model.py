@@ -149,10 +149,9 @@ def _load_llama_cpp_llm() -> BaseLLM:
         n_ctx=constants.context_window,
         max_tokens=constants.max_tokens,
         temperature=constants.temperature,
-        # Safety net: with the gamma-native prompt the model should sample its
-        # EOS (</s>) naturally; stop here guarantees termination even if it
-        # drifts into template echo.
-        stop=["</s>"],
+        # Qwen3 ends an assistant turn at <|im_end|>, which is not an EOG token
+        # in llama.cpp by default — stop explicitly so the response terminates.
+        stop=["<|im_end|>", "<|endoftext|>"],
         # llama-cpp-python defaults flash attention to OFF; without it, every
         # token does a full O(ctx) attention pass (slow at 8k context, esp.
         # with other GPU workloads sharing the card). FA is exact, not approx.

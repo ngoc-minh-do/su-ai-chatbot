@@ -58,16 +58,17 @@ attribute of the wheel and is not a runtime toggle.
 ## Troubleshooting: the model echoes the prompt and never stops
 
 **Symptom:** the llama_cpp response is hundreds of tokens of the prompt itself
-re-printed (the log shows `Using fallback chat format: llama-2` and the eval
-time runs until `max_tokens`, e.g. 1023 runs). **Cause:** Japanese-StableLM
-Instruct Gamma needs its **native** template — preamble
-`「以下は、タスクを説明する命令です。…」` + `### 命令:` / `### 入力:` /
-`### 応答:` + `</s>` EOS — but TheBloke's GGUF has no embedded chat template,
-so llama.cpp falls back to llama-2. **Fix (applied in this repo):**
-`home.py` renders the gamma-native prompt for the `llama_cpp` backend, and
-`model.py` passes `stop=["</s>"]` as a termination safety net. The
-`Using fallback chat format` notice at model load is harmless — the app
-drives raw completion, not llama.cpp chat formatting.
+re-printed and generation runs until `max_tokens`. This affected the previous
+model (japanese-stablelm-instruct-gamma-7b): its TheBloke GGUF has no embedded
+chat template, so llama.cpp fell back to llama-2 formatting and the model never
+sampled its EOS. **Resolution (applied):** the backend now runs
+**Qwen/Qwen3-8B-GGUF** (`Qwen3-8B-Q4_K_M.gguf`). `home.py` renders its native
+ChatML prompt — `<|im_start|>system` / `<|im_start|>user` turns plus the
+template's `enable_thinking=false` generation prompt
+(`<|im_start|>assistant\n thinking\n\n response\n\n` — empty think tags ask the
+model to answer directly without reasoning) — and `model.py` stops generation
+on `<|im_end|>` / `<|endoftext|>`. The `Using fallback chat format` notice
+should no longer appear; if it does, the deployed image predates the swap.
 
 ## Performance: flash attention
 

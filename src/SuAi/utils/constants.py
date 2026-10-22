@@ -4,8 +4,8 @@ import torch
 
 huggingface_model_id = "llm-jp/llm-jp-3.1-1.8b-instruct4"
 
-gguf_model_id = "TheBloke/japanese-stablelm-instruct-gamma-7B-GGUF"
-gguf_model_file = "japanese-stablelm-instruct-gamma-7b.Q4_K_M.gguf"
+gguf_model_id = "Qwen/Qwen3-8B-GGUF"
+gguf_model_file = "Qwen3-8B-Q4_K_M.gguf"
 
 embedding_model_id = "retrieva-jp/amber-large"
 

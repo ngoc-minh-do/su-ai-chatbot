@@ -14,14 +14,14 @@ logger = logging.get_logger(__name__)
 
 _chain: dict[str, RunnableSerializable] = {}
 
-# Japanese-StableLM-Instruct-Gamma-7B native chat format
-# (https://huggingface.co/stabilityai/japanese-stablelm-instruct-gamma-7b):
-# preamble -> system -> "### 命令:" -> "### 入力:" -> "### 応答:", terminated
-# by "</s>". Using any other layout makes the model echo the prompt and never
-# hit EOS. Only the llama_cpp backend runs this model.
-_gamma_template = """
-「以下は、タスクを説明する命令です。要求を適切に満たす応答を書きなさい。」
-
+# Qwen3-8B ChatML prompt (https://huggingface.co/Qwen/Qwen3-8B), matching the
+# model's embedded tokenizer.chat_template: "<|im_start|>system ... <|im_end|>"
+# then the user turn, then the generation prompt. The trailing empty think
+# tags (" thinking\n\n response\n\n") are the template's enable_thinking=false
+# form — they tell the model to skip reasoning and answer directly. The app
+# drives llama.cpp via raw completion, so this string *is* the format; only
+# the llama_cpp backend runs Qwen3.
+_qwen_template = """<|im_start|>system
 あなたはシェアフルシフトのAIアシスタントです。シェアフルシフトは、ユーザーが勤務シフトを作成・管理するためのプラットフォームです。あなたの役割は、ユーザーがシステムを効果的に使えるようにサポートし、質問に答え、シフトスケジュールの管理を手助けすることです。
 
 あなたが行うべきこと:
@@ -32,16 +32,19 @@ _gamma_template = """
 
 ユーザーの質問があいまいな場合は、わからないと伝えてください。
 
-### 命令:
-以下のコンテキストを参考にして、ユーザーの質問に簡潔かつ正確に答えてください。コンテキストに該当する情報がない場合は、その旨を正直に伝えてください。
+以下のコンテキストを参考にして、ユーザーの質問に簡潔かつ正確に答えてください。コンテキストに該当する情報がない場合は、その旨を正直に伝えてください。思考過程は出力せず、最終的な回答のみを出力してください。
 
 コンテキスト:
 {context}
-
-### 入力:
+<|im_end|>
+<|im_start|>user
 {question}
+<|im_end|>
+<|im_start|>assistant
+ thinking
 
-### 応答:
+ response
+
 """
 
 _default_template = """
@@ -79,7 +82,7 @@ def create_rag_chain(selected_model: SelectedModel) -> RunnableSerializable:
     retriever = model.get_retriever(vector_store, llm=llm, key=model_name)
 
     if selected_model == SelectedModel.llama_cpp:
-        template = _gamma_template
+        template = _qwen_template
     else:
         template = _default_template
     prompt = PromptTemplate.from_template(template)
